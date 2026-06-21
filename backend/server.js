@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 const { runQuery, getQuery, getSingle } = require('./db');
 
 const app = express();
@@ -12,16 +12,14 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    type: 'OAuth2',
-    user: process.env.GMAIL_USER,
-    clientId: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    refreshToken: process.env.GOOGLE_REFRESH_TOKEN
-  }
-});
+const oAuth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  'https://developers.google.com/oauthplayground'
+);
+oAuth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+
+const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
@@ -65,25 +63,43 @@ app.post('/api/auth/request-link', async (req, res) => {
     console.log(magicLink);
     console.log('======================================================\n');
     
-    // Send actual email via Nodemailer
+    // Send email via Gmail HTTPS REST API
     try {
-      await transporter.sendMail({
-        from: `"Wudid" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: 'Your Wudid Login Link',
-        text: `You requested a magic link to sign in to Wudid.\n\nClick here to log in: ${magicLink}\n\nIf the link doesn't work, copy and paste this URL into your browser:\n${magicLink}\n\nThis link will expire in 15 minutes.`,
-        html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      const subject = 'Your Wudid Login Link';
+      const htmlBody = `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <h1 style="color: #0f172a;">Wudid</h1>
                 <p>You requested a magic link to sign in to your Wudid account.</p>
                 <a href="${magicLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 8px; margin: 20px 0;">Sign In</a>
                 <p style="color: #64748b; font-size: 14px;">If the button doesn't work, copy and paste this URL into your browser:</p>
                 <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${magicLink}</p>
                 <p style="color: #64748b; font-size: 14px; margin-top: 24px;">This link will expire in 15 minutes.</p>
-              </div>`
+              </div>`;
+
+      const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+      const messageParts = [
+        `From: Wudid <${process.env.GMAIL_USER}>`,
+        `To: ${email}`,
+        'Content-Type: text/html; charset=utf-8',
+        'MIME-Version: 1.0',
+        `Subject: ${utf8Subject}`,
+        '',
+        htmlBody,
+      ];
+      
+      const encodedMessage = Buffer.from(messageParts.join('\n'))
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw: encodedMessage }
       });
+      
     } catch (emailErr) {
-      console.error('NODEMAILER ERROR:', emailErr);
-      return res.status(500).json({ error: 'Failed to send email via Gmail. Check backend terminal for link.' });
+      console.error('GMAIL API ERROR:', emailErr);
+      return res.status(500).json({ error: 'Failed to send email via Gmail API. Check backend terminal for link.' });
     }
     
     res.json({ success: true, message: 'Magic link generated' });
