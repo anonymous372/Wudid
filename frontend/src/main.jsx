@@ -10,7 +10,10 @@ window.fetch = async (...args) => {
   let [resource, config] = args;
   
   if (typeof resource === 'string') {
-    const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
+    let apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
+    if (apiBase.endsWith('/api')) apiBase = apiBase.slice(0, -4);
+    if (apiBase.endsWith('/')) apiBase = apiBase.slice(0, -1);
+    
     resource = resource.replace('http://localhost:3001', apiBase);
   }
   
