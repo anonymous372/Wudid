@@ -55,7 +55,8 @@ app.post('/api/auth/request-link', async (req, res) => {
     
     await runQuery('INSERT INTO magic_links (user_id, token, expires_at) VALUES (?, ?, ?)', [user.id, token, expiresAt]);
     
-    const magicLink = `http://localhost:5173/verify?token=${token}`;
+    const CLIENT_URL = process.env.CLIENT_URL || 'https://wudid.netlify.app';
+    const magicLink = `${CLIENT_URL}/verify?token=${token}`;
     
     // DEVELOPMENT: Print to console
     console.log('\n======================================================');
