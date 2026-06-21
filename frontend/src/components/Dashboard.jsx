@@ -29,7 +29,8 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
     setIsThemeMenuOpen(false);
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayObj = new Date();
+  const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
   const today = new Date();
 
   const minMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);

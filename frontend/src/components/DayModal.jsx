@@ -15,7 +15,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [eventInput, setEventInput] = useState('');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayObj = new Date();
+  const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
   const isFuture = date > todayStr;
 
   const fetchDayData = () => {
