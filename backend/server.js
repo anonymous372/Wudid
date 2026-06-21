@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const { runQuery, getQuery, getSingle } = require('./db');
 
 const app = express();
@@ -12,14 +12,7 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-});
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
 // Auth Middleware
@@ -62,25 +55,25 @@ app.post('/api/auth/request-link', async (req, res) => {
     console.log(magicLink);
     console.log('======================================================\n');
     
-    // Send actual email via Nodemailer
-    try {
-      await transporter.sendMail({
-        from: `"Wudid" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: 'Your Wudid Login Link',
-        text: `You requested a magic link to sign in to Wudid.\n\nClick here to log in: ${magicLink}\n\nIf the link doesn't work, copy and paste this URL into your browser:\n${magicLink}\n\nThis link will expire in 15 minutes.`,
-        html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #0f172a;">Wudid</h1>
-                <p>You requested a magic link to sign in to your Wudid account.</p>
-                <a href="${magicLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 8px; margin: 20px 0;">Sign In</a>
-                <p style="color: #64748b; font-size: 14px;">If the button doesn't work, copy and paste this URL into your browser:</p>
-                <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${magicLink}</p>
-                <p style="color: #64748b; font-size: 14px; margin-top: 24px;">This link will expire in 15 minutes.</p>
-              </div>`
-      });
-    } catch (emailErr) {
-      console.error('NODEMAILER ERROR:', emailErr);
-      return res.status(500).json({ error: 'Failed to send email via Gmail. Check backend terminal for link.' });
+    // Render free tier blocks standard SMTP ports, so we MUST use Resend (HTTPS)
+    const { data, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: email,
+      subject: 'Your Wudid Login Link',
+      text: `You requested a magic link to sign in to Wudid.\n\nClick here to log in: ${magicLink}\n\nIf the link doesn't work, copy and paste this URL into your browser:\n${magicLink}\n\nThis link will expire in 15 minutes.`,
+      html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #0f172a;">Wudid</h1>
+              <p>You requested a magic link to sign in to your Wudid account.</p>
+              <a href="${magicLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 8px; margin: 20px 0;">Sign In</a>
+              <p style="color: #64748b; font-size: 14px;">If the button doesn't work, copy and paste this URL into your browser:</p>
+              <p style="color: #3b82f6; font-size: 12px; word-break: break-all; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${magicLink}</p>
+              <p style="color: #64748b; font-size: 14px; margin-top: 24px;">This link will expire in 15 minutes.</p>
+            </div>`
+    });
+
+    if (error) {
+      console.error('RESEND ERROR:', error);
+      return res.status(400).json({ error: error.message || 'Failed to send email via Resend. Check Render Logs for the link.' });
     }
     
     res.json({ success: true, message: 'Magic link generated' });
