@@ -48,7 +48,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   };
 
   const handleAddChecklist = (e) => {
-    if (e.key === 'Enter' && newChecklistItem.trim()) {
+    e.preventDefault();
+    if (newChecklistItem.trim()) {
       fetch(`${API_BASE}/checklist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +72,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   };
 
   const handleAddTask = (e) => {
-    if (e.key === 'Enter' && newTaskText.trim()) {
+    e.preventDefault();
+    if (newTaskText.trim()) {
       fetch(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,18 +143,17 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
             <h2 className={isNotebook ? 'notebook-font' : ''} style={{ margin: 0, fontSize: isNotebook ? '2rem' : '1.8rem', color: isNotebook ? '#f8fafc' : undefined, lineHeight: isNotebook ? '32px' : '1.2' }}>{formattedDate}</h2>
             
             {isEditingEvent ? (
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', height: isNotebook ? '32px' : 'auto', marginTop: isNotebook ? '0' : '8px' }}>
+              <form onSubmit={(e) => { e.preventDefault(); saveEvent(); }} style={{ display: 'flex', gap: '8px', alignItems: 'center', height: isNotebook ? '32px' : 'auto', marginTop: isNotebook ? '0' : '8px' }}>
                 <input 
                   type="text" 
                   value={eventInput} 
                   onChange={e => setEventInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && saveEvent()}
                   placeholder="Special event name (blank to remove)"
                   autoFocus
                   onBlur={saveEvent}
                   style={{ background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.1)', border: 'none', borderBottom: isNotebook ? '1px dashed rgba(255,255,255,0.4)' : '1px solid var(--accent-primary)', color: '#f8fafc', padding: isNotebook ? '0' : '6px 10px', borderRadius: isNotebook ? '0' : '8px', outline: 'none', fontSize: isNotebook ? '1.1rem' : '0.85rem', width: '100%', maxWidth: '250px', fontFamily: 'inherit', lineHeight: isNotebook ? '31px' : 'normal' }}
                 />
-              </div>
+              </form>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: isNotebook ? '32px' : 'auto', marginTop: isNotebook ? '0' : '8px', minHeight: '26px' }}>
                 {event && event.name ? (
@@ -218,18 +219,17 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                 </div>
               ))}
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '4px 8px 4px 20px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto', opacity: isNotebook ? 1 : 0.6 }}>
+              <form onSubmit={handleAddChecklist} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '4px 8px 4px 20px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto', opacity: isNotebook ? 1 : 0.6 }}>
                 <Plus size={16} color={isNotebook ? '#94a3b8' : undefined} />
                 <input 
                   type="text" 
                   placeholder="Add a to-do... (press Enter)" 
                   value={newChecklistItem}
                   onChange={e => setNewChecklistItem(e.target.value)}
-                  onKeyDown={handleAddChecklist}
                   className={isNotebook ? 'notebook-font' : ''}
                   style={{ background: isNotebook ? 'rgba(255,255,255,0.03)' : 'transparent', border: 'none', borderBottom: isNotebook ? '1px solid rgba(255,255,255,0.1)' : 'none', color: isNotebook ? '#f8fafc' : '#fff', fontSize: isNotebook ? '1.05rem' : '1.05rem', outline: 'none', flex: 1, lineHeight: isNotebook ? '28px' : '1.5', height: isNotebook ? '28px' : 'auto', paddingLeft: isNotebook ? '8px' : '0', borderRadius: isNotebook ? '4px' : '0' }}
                 />
-              </div>
+              </form>
 
               {complete.length > 0 && (
                 <div style={{ marginTop: isNotebook ? '0' : '8px', borderTop: isNotebook ? 'none' : '1px dashed rgba(255,255,255,0.1)', paddingTop: isNotebook ? '0' : '8px', display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '4px' }}>
@@ -308,18 +308,17 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                 </div>
               ))}
               
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '8px 12px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}>
+              <form onSubmit={handleAddTask} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '8px 12px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}>
                 <Plus size={16} color={isNotebook ? '#94a3b8' : "var(--text-secondary)"} />
                 <input 
                   type="text" 
                   placeholder="Log a completed task... (press Enter)" 
                   value={newTaskText}
                   onChange={e => setNewTaskText(e.target.value)}
-                  onKeyDown={handleAddTask}
                   className={isNotebook ? 'notebook-font' : ''}
                   style={{ background: isNotebook ? 'rgba(255,255,255,0.03)' : 'transparent', border: 'none', borderBottom: isNotebook ? '1px solid rgba(255,255,255,0.1)' : 'none', color: isNotebook ? '#f8fafc' : '#fff', fontSize: isNotebook ? '1.05rem' : '1.05rem', outline: 'none', flex: 1, lineHeight: isNotebook ? '28px' : '1.5', height: isNotebook ? '28px' : 'auto', paddingLeft: isNotebook ? '8px' : '0', borderRadius: isNotebook ? '4px' : '0' }}
                 />
-              </div>
+              </form>
             </div>
           </section>
 
