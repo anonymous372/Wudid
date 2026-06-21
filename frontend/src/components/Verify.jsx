@@ -27,11 +27,16 @@ export default function Verify() {
         // Save the JWT to localStorage
         localStorage.setItem('wudid_jwt', data.token);
         
-        // Redirect to dashboard
-        navigate('/');
+        // Redirect to dashboard using location.replace so the PWA remembers '/' instead of '/verify'
+        window.location.replace('/');
       })
       .catch(err => {
-        navigate(`/login?error=${encodeURIComponent(err.message)}`);
+        // If the token was already used but the user is already logged in (has a JWT), just send them to the dashboard!
+        if (localStorage.getItem('wudid_jwt')) {
+          window.location.replace('/');
+        } else {
+          navigate(`/login?error=${encodeURIComponent(err.message)}`);
+        }
       });
   }, [searchParams, navigate]);
 
