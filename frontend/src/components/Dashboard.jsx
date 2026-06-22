@@ -85,18 +85,20 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
 
   return (
     <div className="glass glass-card animate-fade-in" style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 1, minWidth: 0 }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
+          </span>
           {streak > 0 && (
-            <div style={{ fontSize: '0.9rem', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', padding: '4px 10px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ fontSize: '0.9rem', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', padding: '4px 10px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
               <Flame size={14} fill="currentColor" strokeWidth={2} /> {streak}
             </div>
           )}
         </h2>
 
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '4px' }}>
             <button 
               onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
               className="btn-icon"
@@ -208,12 +210,31 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                 </div>
               )}
             </div>
-            <button className="btn-icon" onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} disabled={!canGoBack} style={{ opacity: canGoBack ? 1 : 0.3 }}>
-              <ChevronLeft size={20} />
-            </button>
-            <button className="btn-icon" onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} disabled={!canGoForward} style={{ opacity: canGoForward ? 1 : 0.3 }}>
-              <ChevronRight size={20} />
-            </button>
+            <div className="mobile-hide" style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn-icon" onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} disabled={!canGoBack} style={{ opacity: canGoBack ? 1 : 0.3 }}>
+                <ChevronLeft size={20} />
+              </button>
+              <button className="btn-icon" onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} disabled={!canGoForward} style={{ opacity: canGoForward ? 1 : 0.3 }}>
+                <ChevronRight size={20} />
+              </button>
+            </div>
+            <div className="mobile-only" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+              <button 
+                onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} 
+                disabled={!canGoBack} 
+                style={{ background: 'transparent', border: 'none', padding: '6px 10px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+              <button 
+                onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} 
+                disabled={!canGoForward} 
+                style={{ background: 'transparent', border: 'none', padding: '6px 10px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

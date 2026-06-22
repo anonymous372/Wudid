@@ -153,8 +153,9 @@ export default function AnalyticsGrid({ currentDate }) {
           color: 'var(--text-secondary)',
           display: 'flex',
           flexDirection: 'row',
-          gap: '10px',
-          alignItems: 'center'
+          gap: '8px',
+          alignItems: 'center',
+          whiteSpace: 'nowrap'
         }}>
           <div style={{ color: '#fff', fontWeight: 600 }}>
             {data.dateFormatted}
@@ -220,8 +221,11 @@ export default function AnalyticsGrid({ currentDate }) {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '8px' }}>
             <div className="glass glass-card" style={{ height: '300px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Activity ({viewScope === 'week' ? weekTitle : currentMonthName})</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Activity</h3>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
+                </div>
                 <div style={{ position: 'relative' }}>
                   <button 
                     onClick={() => setIsChartMenuOpen(!isChartMenuOpen)}
@@ -262,14 +266,14 @@ export default function AnalyticsGrid({ currentDate }) {
                   )}
                 </div>
               </div>
-              <div id="analytics-tooltip-container" style={{ position: 'absolute', top: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none' }}></div>
+              <div id="analytics-tooltip-container" style={{ position: 'absolute', top: '56px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none' }}></div>
 
               {chartData.length > 0 ? (
                 <div style={{ flex: 1, minHeight: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'bar' ? (
-                      <BarChart data={chartData}>
-                        <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={10} tickLine={false} axisLine={false} interval={0} />
+                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={7} tickLine={false} axisLine={false} interval={0} tickMargin={2} />
                         <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                         <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
@@ -277,8 +281,8 @@ export default function AnalyticsGrid({ currentDate }) {
                         <Bar dataKey="Checklist" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     ) : (
-                      <LineChart data={chartData}>
-                        <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={10} tickLine={false} axisLine={false} interval={0} />
+                      <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={7} tickLine={false} axisLine={false} interval={0} tickMargin={2} />
                         <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                         <Tooltip cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
@@ -295,7 +299,10 @@ export default function AnalyticsGrid({ currentDate }) {
             </div>
 
             <div className="glass glass-card" style={{ height: '300px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '1.1rem' }}>Label Breakdown ({viewScope === 'week' ? weekTitle : currentMonthName})</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Label Breakdown</h3>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
+              </div>
 
               {displayLabelData.length > 0 ? (
                 <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
