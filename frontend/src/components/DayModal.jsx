@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2 } from 'lucide-react';
+import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2, Share } from 'lucide-react';
 import InlineLabelPicker from './InlineLabelPicker';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -115,6 +115,28 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   const incomplete = checklist.filter(i => !i.is_completed);
   const complete = checklist.filter(i => i.is_completed);
 
+  const [copiedStatus, setCopiedStatus] = useState(false);
+
+  const handleShare = () => {
+    let text = `🚀 *Wudid Update - ${formattedDate}*\n\n`;
+    if (complete.length > 0) {
+      complete.forEach(item => text += `✅ ${item.text}\n`);
+      text += '\n';
+    }
+    if (tasks.length > 0) {
+      text += `📌 *Tasks Done:*\n`;
+      tasks.forEach(task => text += `- ${task.text}\n`);
+    }
+    if (complete.length === 0 && tasks.length === 0) {
+      text += `Nothing logged yet!`;
+    }
+    
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedStatus(true);
+      setTimeout(() => setCopiedStatus(false), 2000);
+    });
+  };
+
   const isNotebook = theme === 'notebook';
 
   return (
@@ -173,7 +195,16 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button 
+              className={isNotebook ? '' : 'btn-icon'} 
+              onClick={handleShare} 
+              title="Copy progress to clipboard" 
+              style={{ color: copiedStatus ? '#10b981' : (isNotebook ? '#f8fafc' : 'var(--text-secondary)'), background: 'transparent', border: 'none', cursor: 'pointer', padding: isNotebook ? '4px' : undefined, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}
+            >
+              <Share size={20} />
+              <span className="desktop-only">{copiedStatus ? 'Copied!' : 'Share'}</span>
+            </button>
             <button className={isNotebook ? '' : 'btn-icon'} onClick={onClose} title="Close" style={{ color: isNotebook ? '#f8fafc' : undefined, background: 'transparent', border: 'none', cursor: 'pointer', padding: isNotebook ? '4px' : undefined }}>
               <X size={24} />
             </button>

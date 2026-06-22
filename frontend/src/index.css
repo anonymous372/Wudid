@@ -250,3 +250,15 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
 .notebook-font {
   font-family: inherit !important;
 }
+
+/* Remove focus outline on Recharts elements */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie-sector,
+.recharts-bar-rectangle,
+.recharts-layer {
+  outline: none !important;
+}
+.recharts-wrapper *:focus {
+  outline: none !important;
+}

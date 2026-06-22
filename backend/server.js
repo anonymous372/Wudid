@@ -275,6 +275,123 @@ app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/stats/streak', authenticateToken, async (req, res) => {
+  try {
+    const datesRes = await getQuery(`
+      SELECT DISTINCT date FROM (
+        SELECT date FROM checklist_items WHERE user_id = ? AND is_completed = 1
+        UNION
+        SELECT date FROM task_entries WHERE user_id = ?
+      ) ORDER BY date DESC
+    `, [req.user_id, req.user_id]);
+    
+    let streak = 0;
+    const todayObj = new Date();
+    const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+    
+    let currentDateObj = new Date(todayObj);
+    let checkDateStr = todayStr;
+    const dates = datesRes.map(d => d.date);
+    
+    if (!dates.includes(todayStr)) {
+      let yesterdayObj = new Date(todayObj);
+      yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+      const yesterdayStr = `${yesterdayObj.getFullYear()}-${String(yesterdayObj.getMonth() + 1).padStart(2, '0')}-${String(yesterdayObj.getDate()).padStart(2, '0')}`;
+      if (dates.includes(yesterdayStr)) {
+        currentDateObj = yesterdayObj;
+        checkDateStr = yesterdayStr;
+      } else {
+        return res.json({ streak: 0 });
+      }
+    }
+    
+    while (true) {
+      if (dates.includes(checkDateStr)) {
+        streak++;
+        currentDateObj.setDate(currentDateObj.getDate() - 1);
+        checkDateStr = `${currentDateObj.getFullYear()}-${String(currentDateObj.getMonth() + 1).padStart(2, '0')}-${String(currentDateObj.getDate()).padStart(2, '0')}`;
+      } else {
+        break;
+      }
+    }
+    
+    res.json({ streak });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) => {
+  const { year, month } = req.params;
+  const prefix = `${year}-${month.padStart(2, '0')}%`;
+  
+  try {
+    const checklistItems = await getQuery('SELECT date, is_completed FROM checklist_items WHERE date LIKE ? AND user_id = ?', [prefix, req.user_id]);
+    const tasks = await getQuery(`
+      SELECT t.date, l.name as label_name, l.color as label_color 
+      FROM task_entries t 
+      LEFT JOIN labels l ON t.label_id = l.id 
+      WHERE t.date LIKE ? AND t.user_id = ?
+    `, [prefix, req.user_id]);
+    
+    let totalCompletedChecklist = 0;
+    let totalTasks = tasks.length;
+    const dailyData = {};
+    const labelData = {};
+    
+    for (const item of checklistItems) {
+      if (item.is_completed) totalCompletedChecklist++;
+      if (!dailyData[item.date]) dailyData[item.date] = { date: item.date, tasksCount: 0, checklistCount: 0 };
+      if (item.is_completed) dailyData[item.date].checklistCount++;
+    }
+    
+    for (const task of tasks) {
+      if (!dailyData[task.date]) dailyData[task.date] = { date: task.date, tasksCount: 0, checklistCount: 0 };
+      dailyData[task.date].tasksCount++;
+      
+      const lblName = task.label_name || 'Unlabeled';
+      const lblColor = task.label_color || '#94a3b8';
+      if (!labelData[lblName]) labelData[lblName] = { name: lblName, color: lblColor, value: 0 };
+      labelData[lblName].value++;
+    }
+    
+    const dailyArray = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));
+    const labelArray = Object.values(labelData).sort((a, b) => b.value - a.value);
+    
+    res.json({ totalTasks, totalCompletedChecklist, dailyData: dailyArray, labelData: labelArray, rawTasks: tasks });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/stats/yearly/:year', authenticateToken, async (req, res) => {
+  const { year } = req.params;
+  const prefix = `${year}-%`;
+  
+  try {
+    const checklistItems = await getQuery('SELECT date, is_completed FROM checklist_items WHERE date LIKE ? AND user_id = ?', [prefix, req.user_id]);
+    const tasks = await getQuery('SELECT date FROM task_entries WHERE date LIKE ? AND user_id = ?', [prefix, req.user_id]);
+    
+    const dailyCounts = {};
+    
+    for (const item of checklistItems) {
+      if (item.is_completed) {
+        if (!dailyCounts[item.date]) dailyCounts[item.date] = 0;
+        dailyCounts[item.date]++;
+      }
+    }
+    
+    for (const task of tasks) {
+      if (!dailyCounts[task.date]) dailyCounts[task.date] = 0;
+      dailyCounts[task.date]++;
+    }
+    
+    res.json(dailyCounts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/labels', authenticateToken, async (req, res) => {
   try {
     const labels = await getQuery('SELECT * FROM labels WHERE user_id = ?', [req.user_id]);

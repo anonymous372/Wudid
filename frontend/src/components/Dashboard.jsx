@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Settings, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Settings, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame } from 'lucide-react';
 import LabelManager from './LabelManager';
+import AnalyticsGrid from './AnalyticsGrid';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -11,6 +12,8 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const [peekDay, setPeekDay] = useState(null);
   const [expandedWeeks, setExpandedWeeks] = useState([]);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [viewMode, setViewMode] = useState('calendar');
   const themeMenuRef = useRef(null);
 
   useEffect(() => {
@@ -43,9 +46,18 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
-    fetch(`${API_BASE}/month/${year}/${month}`)
+    fetch(`${API_BASE}/month/${year}/${month}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
+    })
       .then(res => res.json())
       .then(data => setMonthData(data))
+      .catch(console.error);
+      
+    fetch(`${API_BASE}/stats/streak`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
+    })
+      .then(res => res.json())
+      .then(data => setStreak(data.streak))
       .catch(console.error);
   }, [currentDate, refreshKey]);
 
@@ -74,12 +86,25 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   return (
     <div className="glass glass-card animate-fade-in" style={{ position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
+          {streak > 0 && (
+            <div style={{ fontSize: '0.9rem', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', padding: '4px 10px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Flame size={14} fill="currentColor" strokeWidth={2} /> {streak}
+            </div>
+          )}
         </h2>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
+              className="btn-icon"
+              title={viewMode === 'calendar' ? 'Analytics' : 'Calendar'}
+              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined }}
+            >
+              {viewMode === 'calendar' ? <BarChart2 size={20} /> : <CalendarIcon size={20} />}
+            </button>
             <button 
               onClick={() => setShowLabelManager(true)}
               className="btn-icon"
@@ -193,7 +218,8 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
         </div>
       </div>
 
-      <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: '12px' }}>
+      {viewMode === 'calendar' ? (
+        <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: '12px' }}>
         <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBottom: '8px' }}>
           <button 
             onClick={() => setExpandedWeeks([])}
@@ -472,6 +498,9 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
             );
           })}
       </div>
+      ) : (
+        <AnalyticsGrid currentDate={currentDate} />
+      )}
 
       {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} />}
     </div>
