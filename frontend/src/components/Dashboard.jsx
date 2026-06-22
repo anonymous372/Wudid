@@ -5,7 +5,7 @@ import AnalyticsGrid from './AnalyticsGrid';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, modalTheme, setModalTheme }) {
+export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthData, setMonthData] = useState({});
   const [showLabelManager, setShowLabelManager] = useState(false);
@@ -502,7 +502,14 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
         <AnalyticsGrid currentDate={currentDate} />
       )}
 
-      {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} />}
+      {showLabelManager && (
+        <LabelManager 
+          labels={labels} 
+          fetchLabels={fetchLabels} 
+          onUpdate={onUpdate}
+          onClose={() => setShowLabelManager(false)} 
+        />
+      )}
     </div>
   );
 }

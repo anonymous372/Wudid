@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Tag } from 'lucide-react';
+import { Tag, Plus } from 'lucide-react';
 
-export default function InlineLabelPicker({ currentLabelId, labels, onSelect }) {
+export default function InlineLabelPicker({ currentLabelId, labels, onSelect, onManageLabels }) {
   const [isOpen, setIsOpen] = useState(false);
   const pickerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -96,9 +96,20 @@ export default function InlineLabelPicker({ currentLabelId, labels, onSelect }) 
         >
           <button 
             onClick={() => { onSelect(null); setIsOpen(false); }}
-            style={{ textAlign: 'left', padding: '8px', fontSize: '0.85rem', borderRadius: '6px', background: !currentLabelId ? 'rgba(255,255,255,0.1)' : 'transparent', color: 'var(--text-primary)' }}
+            style={{ 
+              textAlign: 'left', 
+              padding: '8px', 
+              fontSize: '0.85rem', 
+              borderRadius: '6px', 
+              background: !currentLabelId ? 'rgba(255,255,255,0.1)' : 'transparent', 
+              color: 'var(--text-primary)',
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px' 
+            }}
           >
-            No Label
+            <div style={{ width: '10px', height: '10px', borderRadius: '50%', border: '1px dashed var(--text-secondary)' }} />
+            Unlabel
           </button>
           {labels.map(l => (
             <button 
@@ -118,6 +129,15 @@ export default function InlineLabelPicker({ currentLabelId, labels, onSelect }) 
               {l.name}
             </button>
           ))}
+          
+          <div style={{ borderTop: '1px solid var(--glass-border)', marginTop: '4px', paddingTop: '4px' }}>
+            <button 
+              onClick={() => { setIsOpen(false); if (onManageLabels) onManageLabels(); }}
+              style={{ width: '100%', textAlign: 'left', padding: '8px', fontSize: '0.85rem', borderRadius: '6px', background: 'transparent', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Plus size={14} /> Add Label
+            </button>
+          </div>
         </div>,
         document.body
       )}

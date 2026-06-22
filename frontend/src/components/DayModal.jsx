@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2, Share } from 'lucide-react';
+import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2, Share, Copy } from 'lucide-react';
 import InlineLabelPicker from './InlineLabelPicker';
+import LabelManager from './LabelManager';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -14,6 +15,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [eventInput, setEventInput] = useState('');
+  
+  const [showLabelManager, setShowLabelManager] = useState(false);
 
   const todayObj = new Date();
   const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
@@ -150,7 +153,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
         className={isNotebook ? 'notebook-paper' : 'glass glass-card'}
         style={{ 
           width: '90%', 
-          maxWidth: '600px', 
+          maxWidth: isNotebook ? '520px' : '600px', 
           maxHeight: '90vh', 
           display: 'flex', 
           flexDirection: 'column', 
@@ -160,7 +163,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
         }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', height: isNotebook ? '96px' : 'auto', paddingTop: isNotebook ? '16px' : '0', paddingLeft: isNotebook ? '48px' : '0', marginBottom: isNotebook ? '0' : '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', height: isNotebook ? '96px' : 'auto', paddingTop: isNotebook ? '16px' : '0', paddingLeft: isNotebook ? '32px' : '0', marginBottom: isNotebook ? '0' : '24px' }}>
           <div>
             <h2 className={isNotebook ? 'notebook-font' : ''} style={{ margin: 0, fontSize: isNotebook ? '2rem' : '1.8rem', color: isNotebook ? '#f8fafc' : undefined, lineHeight: isNotebook ? '32px' : '1.2' }}>{formattedDate}</h2>
             
@@ -202,8 +205,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
               title="Copy progress to clipboard" 
               style={{ color: copiedStatus ? '#10b981' : (isNotebook ? '#f8fafc' : 'var(--text-secondary)'), background: 'transparent', border: 'none', cursor: 'pointer', padding: isNotebook ? '4px' : undefined, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}
             >
-              <Share size={20} />
-              <span className="desktop-only">{copiedStatus ? 'Copied!' : 'Share'}</span>
+              <Copy size={18} />
+              <span className="desktop-only">{copiedStatus ? 'Copied!' : 'Copy'}</span>
             </button>
             <button className={isNotebook ? '' : 'btn-icon'} onClick={onClose} title="Close" style={{ color: isNotebook ? '#f8fafc' : undefined, background: 'transparent', border: 'none', cursor: 'pointer', padding: isNotebook ? '4px' : undefined }}>
               <X size={24} />
@@ -214,8 +217,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
         <div style={{ overflowY: 'auto', paddingRight: '0', paddingLeft: isNotebook ? '24px' : '0', flex: 1, display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '48px' }}>
           
           <section>
-            <h3 className={isNotebook ? 'notebook-font' : ''} style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: 0, fontSize: isNotebook ? '1.3rem' : '1.1rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', marginBottom: isNotebook ? '0' : '12px', borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: isNotebook ? '0' : '8px', textTransform: isNotebook ? 'none' : 'uppercase', letterSpacing: isNotebook ? '0' : '1px', lineHeight: isNotebook ? '32px' : '1.2', height: isNotebook ? '32px' : 'auto' }}>
-              {isNotebook && <Circle size={12} fill="currentColor" strokeWidth={1.5} style={{ position: 'absolute', left: '-40px', top: '10px', opacity: 0.7 }} />}
+            <h3 className={isNotebook ? 'notebook-font' : ''} style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: 0, fontSize: isNotebook ? '1.3rem' : '1.1rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', marginBottom: isNotebook ? '0' : '12px', borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: isNotebook ? '0' : '8px', paddingLeft: isNotebook ? '8px' : '12px', textTransform: isNotebook ? 'none' : 'uppercase', letterSpacing: isNotebook ? '0' : '1px', lineHeight: isNotebook ? '32px' : '1.2', height: isNotebook ? '32px' : 'auto' }}>
               Checklist
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '4px' }}>
@@ -304,24 +306,29 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
           )}
 
           <section style={{ opacity: isFuture ? 0.4 : 1, pointerEvents: isFuture ? 'none' : 'auto' }}>
-            <h3 className={isNotebook ? 'notebook-font' : ''} style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: 0, fontSize: isNotebook ? '1.3rem' : '1.1rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', marginBottom: isNotebook ? '0' : '12px', borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: isNotebook ? '0' : '8px', textTransform: isNotebook ? 'none' : 'uppercase', letterSpacing: isNotebook ? '0' : '1px', lineHeight: isNotebook ? '32px' : '1.2', height: isNotebook ? '32px' : 'auto' }}>
-              {isNotebook && <Circle size={12} fill="currentColor" strokeWidth={1.5} style={{ position: 'absolute', left: '-40px', top: '10px', opacity: 0.7 }} />}
+            <h3 className={isNotebook ? 'notebook-font' : ''} style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: 0, fontSize: isNotebook ? '1.3rem' : '1.1rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', marginBottom: isNotebook ? '0' : '12px', borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: isNotebook ? '0' : '8px', paddingLeft: isNotebook ? '8px' : '12px', textTransform: isNotebook ? 'none' : 'uppercase', letterSpacing: isNotebook ? '0' : '1px', lineHeight: isNotebook ? '32px' : '1.2', height: isNotebook ? '32px' : 'auto' }}>
               Tasks I Did
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '6px', paddingLeft: isNotebook ? '0' : '12px' }}>
-              {tasks.map(task => (
+              {tasks.map(task => {
+                const label = labels.find(l => l.id === task.label_id);
+                return (
                 <div 
                   key={task.id} 
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', padding: isNotebook ? '0 0 0 16px' : '8px 12px', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', padding: isNotebook ? '0 0 0 24px' : '8px 12px', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}
                   onMouseEnter={(e) => { const b = e.currentTarget.querySelector('.trash-btn'); if(b) b.style.opacity = '0.6'; }}
                   onMouseLeave={(e) => { const b = e.currentTarget.querySelector('.trash-btn'); if(b) b.style.opacity = '0'; }}
                 >
+                  {isNotebook && (
+                    <div style={{ marginTop: '13px', width: '6px', height: '6px', background: '#fff', flexShrink: 0 }} />
+                  )}
                   <span className={isNotebook ? 'notebook-font' : ''} style={{ flex: 1, fontSize: isNotebook ? '1.1rem' : '1.05rem', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis' }}>{task.text}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: isNotebook ? '32px' : '26px' }}>
                     <InlineLabelPicker 
                       currentLabelId={task.label_id} 
                       labels={labels} 
-                      onSelect={(id) => updateTaskLabel(task.id, id)} 
+                      onSelect={(labelId) => updateTaskLabel(task.id, labelId)} 
+                      onManageLabels={() => setShowLabelManager(true)}
                     />
                     {!isFuture && (
                       <button 
@@ -337,9 +344,9 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                     )}
                   </div>
                 </div>
-              ))}
+              )})}
               
-              <form onSubmit={handleAddTask} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '8px 12px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}>
+              <form onSubmit={handleAddTask} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: isNotebook ? '0 0 0 24px' : '8px 12px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.02)', borderRadius: isNotebook ? '0' : '8px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}>
                 <Plus size={16} color={isNotebook ? '#94a3b8' : "var(--text-secondary)"} />
                 <input 
                   type="text" 
@@ -353,8 +360,20 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
             </div>
           </section>
 
+          {isNotebook && (
+            <div style={{ height: '32px' }} />
+          )}
         </div>
       </div>
+      
+      {showLabelManager && (
+        <LabelManager 
+          labels={labels} 
+          fetchLabels={() => onUpdate()} 
+          onUpdate={onUpdate}
+          onClose={() => setShowLabelManager(false)} 
+        />
+      )}
     </div>
   );
 }

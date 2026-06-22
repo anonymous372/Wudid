@@ -87,6 +87,7 @@ function MainApp() {
             labels={labels} 
             fetchLabels={fetchLabels}
             refreshKey={refreshKey}
+            onUpdate={() => setRefreshKey(k => k + 1)}
             modalTheme={modalTheme}
             setModalTheme={setModalTheme}
           />
@@ -97,7 +98,10 @@ function MainApp() {
         <DayModal 
           date={selectedDate} 
           labels={labels} 
-          onUpdate={() => setRefreshKey(k => k + 1)}
+          onUpdate={() => {
+            setRefreshKey(k => k + 1);
+            fetchLabels();
+          }}
           onClose={() => setSelectedDate(null)} 
           theme={modalTheme}
         />

@@ -3,7 +3,7 @@ import { X, Plus, Pencil, Trash2, Check } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function LabelManager({ labels, fetchLabels, onClose }) {
+export default function LabelManager({ labels, fetchLabels, onUpdate, onClose }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3b82f6');
   
@@ -23,6 +23,7 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
     }).then(() => {
       setName('');
       fetchLabels();
+      if (onUpdate) onUpdate();
     });
   };
   
@@ -41,6 +42,7 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
     }).then(() => {
       setEditingId(null);
       fetchLabels();
+      if (onUpdate) onUpdate();
     });
   };
   
@@ -50,6 +52,7 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
     }).then(() => {
       setPendingDelete(null);
       fetchLabels();
+      if (onUpdate) onUpdate();
     });
   };
 
@@ -123,11 +126,12 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
               </div>
               
               {pendingDelete && pendingDelete.id === l.id && (
-                <div style={{ padding: '10px 4px 0 4px', marginTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
-                  <div style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                    This label is used by {l.taskCount} task(s). Deleting it will remove the label from those tasks.
+                <div style={{ padding: '8px 4px 0 4px', marginTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                  <div style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '0.8rem', lineHeight: '1.3' }}>
+                    <span style={{ fontWeight: 600 }}>Are you sure?</span> {l.taskCount} {l.taskCount === 1 ? 'task uses' : 'tasks use'} this label.<br />
+                    <span style={{ fontSize: '0.75rem', opacity: 0.6, color: 'var(--text-secondary)' }}>(Tasks will be marked unlabeled)</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                     <button onClick={() => setPendingDelete(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
                     <button onClick={() => executeDelete(l.id)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'var(--danger-color)', cursor: 'pointer', fontSize: '0.8rem' }}>Delete</button>
                   </div>
