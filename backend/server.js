@@ -54,7 +54,9 @@ app.post('/api/auth/request-link', async (req, res) => {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
     await MagicLink.create({ user_id: user._id, token, expires_at: expiresAt });
     
-    const CLIENT_URL = process.env.CLIENT_URL || 'https://wudid.netlify.app';
+    const CLIENT_URL = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:5173' 
+      : (process.env.CLIENT_URL || 'https://wudid.netlify.app');
     const magicLink = `${CLIENT_URL}/verify?token=${token}`;
     
     console.log('\n======================================================');
@@ -367,7 +369,11 @@ app.get('/api/stats/yearly/:year', authenticateToken, async (req, res) => {
 app.get('/api/labels', authenticateToken, async (req, res) => {
   try {
     const labels = await Label.find({ user_id: req.user_id });
-    res.json(labels);
+    const labelsWithCounts = await Promise.all(labels.map(async (label) => {
+      const taskCount = await TaskEntry.countDocuments({ label_id: label._id });
+      return { ...label.toJSON(), taskCount };
+    }));
+    res.json(labelsWithCounts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

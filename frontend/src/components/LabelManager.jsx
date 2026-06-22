@@ -10,6 +10,7 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editColor, setEditColor] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -43,14 +44,13 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
     });
   };
   
-  const deleteLabel = (id) => {
-    if(confirm('Are you sure you want to delete this label? Tasks using it will lose their label.')) {
-      fetch(`${API_BASE}/labels/${id}`, {
-        method: 'DELETE'
-      }).then(() => {
-        fetchLabels();
-      });
-    }
+  const executeDelete = (id) => {
+    fetch(`${API_BASE}/labels/${id}`, {
+      method: 'DELETE'
+    }).then(() => {
+      setPendingDelete(null);
+      fetchLabels();
+    });
   };
 
   return (
@@ -84,34 +84,54 @@ export default function LabelManager({ labels, fetchLabels, onClose }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
           {labels.map(l => (
-            <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px' }}>
-              {editingId === l.id ? (
-                <>
-                  <input 
-                    type="color" 
-                    value={editColor} 
-                    onChange={e => setEditColor(e.target.value)}
-                    style={{ width: '30px', height: '30px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
-                  />
-                  <input 
-                    type="text" 
-                    value={editName} 
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveEdit()}
-                    className="input-field"
-                    style={{ padding: '6px', flex: 1 }}
-                    autoFocus
-                  />
-                  <button className="btn-icon" onClick={saveEdit} style={{ color: 'var(--success-color)' }}><Check size={16} /></button>
-                  <button className="btn-icon" onClick={() => setEditingId(null)}><X size={16} /></button>
-                </>
-              ) : (
-                <>
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: l.color }} />
-                  <span style={{ flex: 1 }}>{l.name}</span>
-                  <button className="btn-icon" onClick={() => startEdit(l)} style={{ padding: '6px' }}><Pencil size={14} /></button>
-                  <button className="btn-icon" onClick={() => deleteLabel(l.id)} style={{ padding: '6px', color: 'var(--danger-color)' }}><Trash2 size={14} /></button>
-                </>
+            <div key={l.id} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {editingId === l.id ? (
+                  <>
+                    <input 
+                      type="color" 
+                      value={editColor} 
+                      onChange={e => setEditColor(e.target.value)}
+                      style={{ width: '30px', height: '30px', padding: '0', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                    />
+                    <input 
+                      type="text" 
+                      value={editName} 
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && saveEdit()}
+                      className="input-field"
+                      style={{ padding: '6px', flex: 1 }}
+                      autoFocus
+                    />
+                    <button className="btn-icon" onClick={saveEdit} style={{ color: 'var(--success-color)' }}><Check size={16} /></button>
+                    <button className="btn-icon" onClick={() => setEditingId(null)}><X size={16} /></button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: l.color }} />
+                    <span style={{ flex: 1 }}>{l.name}</span>
+                    <button className="btn-icon" onClick={() => startEdit(l)} style={{ padding: '6px' }}><Pencil size={14} /></button>
+                    <button className="btn-icon" onClick={() => {
+                      if (l.taskCount > 0) {
+                        setPendingDelete(l);
+                      } else {
+                        executeDelete(l.id);
+                      }
+                    }} style={{ padding: '6px', color: 'var(--danger-color)' }}><Trash2 size={14} /></button>
+                  </>
+                )}
+              </div>
+              
+              {pendingDelete && pendingDelete.id === l.id && (
+                <div style={{ padding: '10px 4px 0 4px', marginTop: '4px', borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+                  <div style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                    This label is used by {l.taskCount} task(s). Deleting it will remove the label from those tasks.
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setPendingDelete(null)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
+                    <button onClick={() => executeDelete(l.id)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'transparent', color: 'var(--danger-color)', cursor: 'pointer', fontSize: '0.8rem' }}>Delete</button>
+                  </div>
+                </div>
               )}
             </div>
           ))}

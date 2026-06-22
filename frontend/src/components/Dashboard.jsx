@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Settings, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame } from 'lucide-react';
 import LabelManager from './LabelManager';
 import AnalyticsGrid from './AnalyticsGrid';
 
@@ -110,7 +110,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               className="btn-icon"
               title="Manage Labels"
             >
-              <Settings size={20} />
+              <Tags size={20} />
             </button>
 
             <div style={{ position: 'relative' }} ref={themeMenuRef}>
