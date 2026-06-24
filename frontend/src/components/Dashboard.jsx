@@ -178,31 +178,31 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
           </div>
         </h2>
 
-        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '2px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <button 
               onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
               className="btn-icon"
               title={viewMode === 'calendar' ? 'Analytics' : 'Calendar'}
-              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined, padding: '5px' }}
+              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined, padding: '6px' }}
             >
-              {viewMode === 'calendar' ? <BarChart2 size={18} /> : <CalendarIcon size={18} />}
+              {viewMode === 'calendar' ? <BarChart2 size={19} /> : <CalendarIcon size={19} />}
             </button>
             <button 
               onClick={() => setShowUpcomingEvents(true)}
               className="btn-icon"
               title="Upcoming Events"
-              style={{ padding: '5px' }}
+              style={{ padding: '6px' }}
             >
-              <CalendarDays size={18} />
+              <CalendarDays size={19} />
             </button>
             <button 
               onClick={() => setShowLabelManager(true)}
               className="btn-icon"
               title="Manage Labels"
-              style={{ padding: '5px' }}
+              style={{ padding: '6px' }}
             >
-              <Tags size={18} />
+              <Tags size={19} />
             </button>
 
             <div style={{ position: 'relative' }} ref={themeMenuRef}>
@@ -214,10 +214,10 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                   background: isThemeMenuOpen ? 'rgba(255,255,255,0.1)' : undefined,
                   borderColor: isThemeMenuOpen ? 'rgba(255,255,255,0.2)' : undefined,
                   color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit',
-                  padding: '5px'
+                  padding: '6px'
                 }}
               >
-                <Palette size={18} />
+                <Palette size={19} />
               </button>
               
               {isThemeMenuOpen && (
@@ -313,17 +313,17 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               <button 
                 onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} 
                 disabled={!canGoBack} 
-                style={{ background: 'transparent', border: 'none', padding: '5px 8px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={19} />
               </button>
               <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '16px' }} />
               <button 
                 onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} 
                 disabled={!canGoForward} 
-                style={{ background: 'transparent', border: 'none', padding: '5px 8px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={19} />
               </button>
             </div>
           </div>
