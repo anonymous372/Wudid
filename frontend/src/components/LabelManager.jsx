@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Pencil, Trash2, Check } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -56,7 +57,7 @@ export default function LabelManager({ labels, fetchLabels, onUpdate, onClose })
     });
   };
 
-  return (
+  return createPortal(
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
@@ -65,7 +66,7 @@ export default function LabelManager({ labels, fetchLabels, onUpdate, onClose })
       <div className="glass glass-card" style={{ width: '400px', maxWidth: '90%' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <h3 style={{ margin: 0 }}>Manage Labels</h3>
-          <button className="btn-icon" onClick={onClose}><X size={20} /></button>
+          <button className="btn-icon responsive-close-btn" onClick={onClose}><X /></button>
         </div>
 
         <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
@@ -142,6 +143,7 @@ export default function LabelManager({ labels, fetchLabels, onUpdate, onClose })
           {labels.length === 0 && <div style={{ color: 'var(--text-secondary)' }}>No labels created yet.</div>}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

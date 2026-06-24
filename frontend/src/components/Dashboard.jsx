@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame, CalendarDays } from 'lucide-react';
 import LabelManager from './LabelManager';
 import AnalyticsGrid from './AnalyticsGrid';
+import UpcomingEvents from './UpcomingEvents';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -9,6 +10,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthData, setMonthData] = useState({});
   const [showLabelManager, setShowLabelManager] = useState(false);
+  const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
   const [peekDay, setPeekDay] = useState(null);
   const [expandedWeeks, setExpandedWeeks] = useState([]);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -37,7 +39,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const today = new Date();
 
   const minMonth = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-  const maxMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const maxMonth = new Date(today.getFullYear(), today.getMonth() + 2, 1);
 
   const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const canGoBack = currentMonthStart > minMonth;
@@ -106,6 +108,13 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined }}
             >
               {viewMode === 'calendar' ? <BarChart2 size={20} /> : <CalendarIcon size={20} />}
+            </button>
+            <button 
+              onClick={() => setShowUpcomingEvents(true)}
+              className="btn-icon"
+              title="Upcoming Events"
+            >
+              <CalendarDays size={20} />
             </button>
             <button 
               onClick={() => setShowLabelManager(true)}
@@ -518,19 +527,13 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               </React.Fragment>
             );
           })}
-      </div>
+        </div>
       ) : (
-        <AnalyticsGrid currentDate={currentDate} />
+        <AnalyticsGrid currentDate={currentDate} labels={labels} />
       )}
 
-      {showLabelManager && (
-        <LabelManager 
-          labels={labels} 
-          fetchLabels={fetchLabels} 
-          onUpdate={onUpdate}
-          onClose={() => setShowLabelManager(false)} 
-        />
-      )}
+      {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} onUpdate={onUpdate} />}
+      {showUpcomingEvents && <UpcomingEvents onClose={() => setShowUpcomingEvents(false)} />}
     </div>
   );
 }

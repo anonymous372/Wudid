@@ -138,6 +138,19 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
     justify-content: space-between !important;
     border-radius: 6px !important;
   }
+  
+  .responsive-dropdown {
+    padding: 4px 8px !important;
+    gap: 4px !important;
+    font-size: 0.8rem !important;
+  }
+  .responsive-close-btn {
+    padding: 4px !important;
+  }
+  .responsive-close-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
   .calendar-day-header {
     font-size: 0.75rem !important;
   }
@@ -182,6 +195,7 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  aspect-ratio: 1 / 1;
 }
 
 .btn-icon:hover {
@@ -204,7 +218,20 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
 .input-field:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.responsive-dropdown {
+  padding: 6px 12px;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.responsive-close-btn {
+  padding: 8px;
+}
+.responsive-close-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* Custom Scrollbar */

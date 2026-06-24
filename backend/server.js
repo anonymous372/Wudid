@@ -430,6 +430,20 @@ app.post('/api/events', authenticateToken, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get('/api/events/upcoming', authenticateToken, async (req, res) => {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const events = await Event.find({ 
+      user_id: req.user_id, 
+      date: { $gte: todayStr } 
+    }).sort({ date: 1 });
+    
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
