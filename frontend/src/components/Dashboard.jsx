@@ -3,10 +3,11 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, M
 import LabelManager from './LabelManager';
 import AnalyticsGrid from './AnalyticsGrid';
 import UpcomingEvents from './UpcomingEvents';
+import confetti from 'canvas-confetti';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme }) {
+export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme, isModalOpen }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthData, setMonthData] = useState({});
   const [showLabelManager, setShowLabelManager] = useState(false);
@@ -15,8 +16,18 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const [expandedWeeks, setExpandedWeeks] = useState([]);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [isActiveToday, setIsActiveToday] = useState(false);
+  const [justActivated, setJustActivated] = useState(false);
+  const prevIsActiveRef = useRef(null);
+  const pendingStreakRef = useRef(null);
+  const isModalOpenRef = useRef(isModalOpen);
+  const streakBadgeRef = useRef(null);
   const [viewMode, setViewMode] = useState('calendar');
   const themeMenuRef = useRef(null);
+
+  useEffect(() => {
+    isModalOpenRef.current = isModalOpen;
+  }, [isModalOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,13 +66,66 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
       .then(data => setMonthData(data))
       .catch(console.error);
       
-    fetch(`${API_BASE}/stats/streak`, {
+    fetch(`${API_BASE}/stats/streak?today=${todayStr}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
     })
       .then(res => res.json())
-      .then(data => setStreak(data.streak))
+      .then(data => {
+        if (isModalOpenRef.current) {
+          pendingStreakRef.current = data;
+        } else {
+          setStreak(data.streak);
+          if (prevIsActiveRef.current === false && data.isActiveToday === true) {
+            setJustActivated(true);
+            setTimeout(() => setJustActivated(false), 1500);
+          }
+          prevIsActiveRef.current = data.isActiveToday;
+          setIsActiveToday(data.isActiveToday);
+        }
+      })
       .catch(console.error);
   }, [currentDate, refreshKey]);
+
+  const triggerConfetti = () => {
+    let x = 0.15;
+    let y = 0.15;
+    
+    if (streakBadgeRef.current) {
+      const rect = streakBadgeRef.current.getBoundingClientRect();
+      x = (rect.left + rect.width / 2) / window.innerWidth;
+      y = (rect.top + rect.height / 2) / window.innerHeight;
+    }
+
+    confetti({
+      particleCount: 40,
+      startVelocity: 20,
+      spread: 100,
+      angle: 90,
+      ticks: 120,
+      gravity: 0.8,
+      scalar: 0.7,
+      origin: { x, y },
+      colors: ['#f97316', '#fb923c', '#fdba74']
+    });
+  };
+
+  useEffect(() => {
+    if (!isModalOpen && pendingStreakRef.current) {
+      const data = pendingStreakRef.current;
+      pendingStreakRef.current = null;
+      
+      setTimeout(() => {
+        setStreak(data.streak);
+        if (prevIsActiveRef.current === false && data.isActiveToday === true) {
+          setJustActivated(true);
+          triggerConfetti();
+          setTimeout(() => setJustActivated(false), 1500);
+        }
+        prevIsActiveRef.current = data.isActiveToday;
+        setIsActiveToday(data.isActiveToday);
+      }, 1000);
+    }
+  }, [isModalOpen]);
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfWeek = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
@@ -92,11 +156,26 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
           </span>
-          {streak > 0 && (
-            <div style={{ fontSize: '0.9rem', background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', padding: '4px 10px', borderRadius: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-              <Flame size={14} fill="currentColor" strokeWidth={2} /> {streak}
-            </div>
-          )}
+          <div 
+            ref={streakBadgeRef}
+            className={`streak-celebrate-wrap ${justActivated ? 'streak-celebrate' : ''}`}
+            style={{ 
+              fontSize: '0.9rem', 
+              background: isActiveToday ? 'rgba(249, 115, 22, 0.15)' : 'transparent', 
+              color: isActiveToday ? '#f97316' : 'var(--text-secondary)', 
+              border: isActiveToday ? '1px solid transparent' : '1px solid rgba(255,255,255,0.2)',
+              padding: '3px 10px', 
+              borderRadius: '16px', 
+              fontWeight: 700, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              flexShrink: 0,
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <Flame size={14} fill={isActiveToday ? "currentColor" : "none"} strokeWidth={2} style={{ transition: 'all 0.3s ease' }} /> {streak}
+          </div>
         </h2>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>

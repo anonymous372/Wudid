@@ -263,8 +263,9 @@ app.get('/api/stats/streak', authenticateToken, async (req, res) => {
     const dates = [...new Set([...cDates, ...tDates])].sort().reverse();
     
     let streak = 0;
-    const todayObj = new Date();
-    const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+    const todayStr = req.query.today || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const [tY, tM, tD] = todayStr.split('-');
+    const todayObj = new Date(parseInt(tY), parseInt(tM) - 1, parseInt(tD));
     
     let currentDateObj = new Date(todayObj);
     let checkDateStr = todayStr;
@@ -277,7 +278,7 @@ app.get('/api/stats/streak', authenticateToken, async (req, res) => {
         currentDateObj = yesterdayObj;
         checkDateStr = yesterdayStr;
       } else {
-        return res.json({ streak: 0 });
+        return res.json({ streak: 0, isActiveToday: false });
       }
     }
     
@@ -291,7 +292,7 @@ app.get('/api/stats/streak', authenticateToken, async (req, res) => {
       }
     }
     
-    res.json({ streak });
+    res.json({ streak, isActiveToday: dates.includes(todayStr) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

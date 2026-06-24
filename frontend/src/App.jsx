@@ -90,6 +90,7 @@ function MainApp() {
             onUpdate={() => setRefreshKey(k => k + 1)}
             modalTheme={modalTheme}
             setModalTheme={setModalTheme}
+            isModalOpen={!!selectedDate}
           />
         )}
       </main>
