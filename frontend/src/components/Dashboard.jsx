@@ -152,7 +152,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   return (
     <div className="glass glass-card animate-fade-in" style={{ position: 'relative' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 1, minWidth: 0 }}>
+        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 1, minWidth: 0, fontSize: 'clamp(1.25rem, 5vw, 1.6rem)' }}>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
           </span>
@@ -160,11 +160,11 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
             ref={streakBadgeRef}
             className={`streak-celebrate-wrap ${justActivated ? 'streak-celebrate' : ''}`}
             style={{ 
-              fontSize: '0.9rem', 
+              fontSize: '0.85rem', 
               background: isActiveToday ? 'rgba(249, 115, 22, 0.15)' : 'transparent', 
               color: isActiveToday ? '#f97316' : 'var(--text-secondary)', 
               border: isActiveToday ? '1px solid transparent' : '1px solid rgba(255,255,255,0.2)',
-              padding: '3px 10px', 
+              padding: '2px 8px', 
               borderRadius: '16px', 
               fontWeight: 700, 
               display: 'flex', 
@@ -174,33 +174,35 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               transition: 'all 0.3s ease'
             }}
           >
-            <Flame size={14} fill={isActiveToday ? "currentColor" : "none"} strokeWidth={2} style={{ transition: 'all 0.3s ease' }} /> {streak}
+            <Flame size={14} fill={isActiveToday ? "currentColor" : "none"} strokeWidth={2} style={{ transition: 'all 0.3s ease' }} /> {streak} <span className="mobile-hide">Streak</span>
           </div>
         </h2>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '4px' }}>
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: '2px' }}>
             <button 
               onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
               className="btn-icon"
               title={viewMode === 'calendar' ? 'Analytics' : 'Calendar'}
-              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined }}
+              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined, padding: '5px' }}
             >
-              {viewMode === 'calendar' ? <BarChart2 size={20} /> : <CalendarIcon size={20} />}
+              {viewMode === 'calendar' ? <BarChart2 size={18} /> : <CalendarIcon size={18} />}
             </button>
             <button 
               onClick={() => setShowUpcomingEvents(true)}
               className="btn-icon"
               title="Upcoming Events"
+              style={{ padding: '5px' }}
             >
-              <CalendarDays size={20} />
+              <CalendarDays size={18} />
             </button>
             <button 
               onClick={() => setShowLabelManager(true)}
               className="btn-icon"
               title="Manage Labels"
+              style={{ padding: '5px' }}
             >
-              <Tags size={20} />
+              <Tags size={18} />
             </button>
 
             <div style={{ position: 'relative' }} ref={themeMenuRef}>
@@ -211,10 +213,11 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                 style={{
                   background: isThemeMenuOpen ? 'rgba(255,255,255,0.1)' : undefined,
                   borderColor: isThemeMenuOpen ? 'rgba(255,255,255,0.2)' : undefined,
-                  color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit'
+                  color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit',
+                  padding: '5px'
                 }}
               >
-                <Palette size={20} />
+                <Palette size={18} />
               </button>
               
               {isThemeMenuOpen && (
@@ -306,19 +309,19 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                 <ChevronRight size={20} />
               </button>
             </div>
-            <div className="mobile-only" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+            <div className="mobile-only" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
               <button 
                 onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} 
                 disabled={!canGoBack} 
-                style={{ background: 'transparent', border: 'none', padding: '6px 10px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '5px 8px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
                 <ChevronLeft size={18} />
               </button>
-              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '16px' }} />
               <button 
                 onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} 
                 disabled={!canGoForward} 
-                style={{ background: 'transparent', border: 'none', padding: '6px 10px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '5px 8px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
                 <ChevronRight size={18} />
               </button>
@@ -460,22 +463,32 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
 
                       <div className="mobile-only" style={{ width: '100%', flexDirection: 'column', gap: '2px', alignItems: 'flex-start', marginTop: 'auto' }}>
                         {(completedChecklist.length > 0 || (isPast && !isToday && incompleteCount > 0)) && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                            {completedChecklist.map((item, i) => (
-                              <CheckSquare key={'mcs'+i} size={8} color="#10b981" strokeWidth={3} />
-                            ))}
+                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                             {(isPast && !isToday && incompleteCount > 0) && (
-                              <div style={{ width: '8px', height: '8px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
+                              <div style={{ flexShrink: 0, width: '8px', height: '8px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)', marginRight: '1px' }}>
                                 {incompleteCount}
+                              </div>
+                            )}
+                            {completedChecklist.slice(0, 1).map((item, i) => (
+                              <CheckSquare key={'mcs'+i} size={8} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
+                            ))}
+                            {completedChecklist.length > 1 && (
+                              <div style={{ fontSize: '0.4rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 3px', borderRadius: '3px', fontWeight: 700, flexShrink: 0, marginLeft: '1px' }}>
+                                +{completedChecklist.length - 1}
                               </div>
                             )}
                           </div>
                         )}
                         {dayData.tasks.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start' }}>
-                            {dayData.tasks.map((task, i) => (
-                              <div key={'mts'+i} style={{ width: '4px', height: '4px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
+                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
+                            {dayData.tasks.slice(0, 2).map((task, i) => (
+                              <div key={'mts'+i} style={{ flexShrink: 0, width: '4px', height: '4px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
                             ))}
+                            {dayData.tasks.length > 2 && (
+                              <div style={{ fontSize: '0.4rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 3px', borderRadius: '3px', fontWeight: 700, flexShrink: 0, marginLeft: '1px' }}>
+                                +{dayData.tasks.length - 2}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -483,57 +496,75 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                       <div className="desktop-only" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                         {isExpanded ? (
                         <div style={{ marginTop: '6px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          {completedChecklist.slice(0, 5).map((item, i) => (
-                            <div key={'c' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
-                              <CheckSquare size={10} color="#10b981" strokeWidth={2.5} style={{ flexShrink: 0 }} />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{item.text}</span>
-                            </div>
-                          ))}
-                          
-                          {dayData.tasks.slice(0, 5 - Math.min(completedChecklist.length, 5)).map((task, i) => (
-                            <div key={'t' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
-                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{task.text}</span>
-                            </div>
-                          ))}
-                          
-                          {(completedChecklist.length + dayData.tasks.length > 5) && (
-                            <div style={{ flexShrink: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600, paddingLeft: '15px' }}>
-                              +{completedChecklist.length + dayData.tasks.length - 5} more
-                            </div>
-                          )}
-                          
                           {(isPast && !isToday && incompleteCount > 0) && (
-                            <div className="task-dot-container" style={{ flexShrink: 0, marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8 }}>
+                            <div className="task-dot-container" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8, justifyContent: 'flex-start', width: 'max-content' }}>
                               <div style={{ width: '12px', height: '12px', border: '1px solid #ef4444', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#ef4444' }}>
                                 {incompleteCount}
                               </div>
                               <div className="task-dot-tooltip">{incompleteCount} pending items</div>
                             </div>
                           )}
+
+                          {completedChecklist.slice(0, 3).map((item, i) => (
+                            <div key={'c' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
+                              <CheckSquare size={10} color="#10b981" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{item.text}</span>
+                            </div>
+                          ))}
+                          
+                          {dayData.tasks.slice(0, 3 - Math.min(completedChecklist.length, 3)).map((task, i) => (
+                            <div key={'t' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{task.text}</span>
+                            </div>
+                          ))}
+                          
+                          {(completedChecklist.length + dayData.tasks.length > 3) && (
+                            <div style={{ flexShrink: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600, paddingLeft: '15px' }}>
+                              +{completedChecklist.length + dayData.tasks.length - 3} more
+                            </div>
+                          )}
                         </div>
                       ) : (
-                        <div style={{ marginTop: 'auto', display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                          {completedChecklist.map((item, i) => (
-                            <div key={'cs'+i} className="task-dot-container">
-                              <CheckSquare size={12} color="#10b981" strokeWidth={3} />
-                              <div className="task-dot-tooltip">{item.text}</div>
+                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', width: '100%', overflow: 'hidden' }}>
+                          {(completedChecklist.length > 0 || (isPast && !isToday && incompleteCount > 0)) && (
+                            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
+                              {(isPast && !isToday && incompleteCount > 0) && (
+                                <div className="task-dot-container" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', marginRight: '2px', width: 'max-content' }}>
+                                  <div style={{ width: '12px', height: '12px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
+                                    {incompleteCount}
+                                  </div>
+                                  <div className="task-dot-tooltip">{incompleteCount} pending items</div>
+                                </div>
+                              )}
+                              {completedChecklist.slice(0, 4).map((item, i) => (
+                                <div key={'cs'+i} className="task-dot-container" style={{ flexShrink: 0, width: 'max-content' }}>
+                                  <CheckSquare size={12} color="#10b981" strokeWidth={3} />
+                                  <div className="task-dot-tooltip">{item.text}</div>
+                                </div>
+                              ))}
+                              {completedChecklist.length > 4 && (
+                                <div style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '4px', fontWeight: 700, flexShrink: 0, marginLeft: '2px' }}>
+                                  +{completedChecklist.length - 4}
+                                </div>
+                              )}
                             </div>
-                          ))}
-                          {dayData.tasks.map((task, i) => (
-                            <div key={'ts'+i} className="task-dot-container">
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
-                              <div className="task-dot-tooltip">
-                                {task.label_name ? task.label_name : 'Unlabeled'}
-                              </div>
-                            </div>
-                          ))}
-                          {(isPast && !isToday && incompleteCount > 0) && (
-                            <div className="task-dot-container" style={{ display: 'flex', alignItems: 'center', marginLeft: '2px' }}>
-                              <div style={{ width: '12px', height: '12px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
-                                {incompleteCount}
-                              </div>
-                              <div className="task-dot-tooltip">{incompleteCount} pending items</div>
+                          )}
+                          {dayData.tasks.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
+                              {dayData.tasks.slice(0, 6).map((task, i) => (
+                                <div key={'ts'+i} className="task-dot-container" style={{ flexShrink: 0 }}>
+                                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
+                                  <div className="task-dot-tooltip">
+                                    {task.label_name ? task.label_name : 'Unlabeled'}
+                                  </div>
+                                </div>
+                              ))}
+                              {dayData.tasks.length > 6 && (
+                                <div style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '4px', fontWeight: 700, flexShrink: 0, marginLeft: '2px' }}>
+                                  +{dayData.tasks.length - 6}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -575,7 +606,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                             <div style={{ marginBottom: '8px' }}>
                               <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Checklist</div>
                               <div style={{ paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                {dayData.checklist.map((item, i) => (
+                                {[...dayData.checklist].sort((a, b) => (a.is_completed === b.is_completed ? 0 : a.is_completed ? -1 : 1)).map((item, i) => (
                                   <div key={'cp' + i} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: item.is_completed ? 0.5 : 1, textDecoration: item.is_completed ? 'line-through' : 'none', lineHeight: '1.2' }}>
                                     {item.is_completed ? <CheckSquare size={10} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} /> : <Square size={10} color="var(--text-secondary)" strokeWidth={2.5} style={{ flexShrink: 0 }} />}
                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.text}</span>
