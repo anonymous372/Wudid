@@ -112,14 +112,17 @@ h1 { font-size: 2.5rem; margin-bottom: 24px; }
 h2 { font-size: 1.8rem; margin-bottom: 16px; }
 
 /* Mobile Utilities */
-.mobile-only { display: none; }
+.mobile-only { display: none !important; }
 .desktop-only { display: block; }
 .theme-menu { right: 0; }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 12px 8px !important;
+  }
   .calendar-grid {
     grid-template-columns: repeat(7, 1fr) !important;
-    gap: 6px !important;
+    gap: 4px !important;
   }
   .mobile-hide {
     display: none !important;
@@ -131,13 +134,18 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
     display: flex !important;
   }
   .calendar-day {
-    height: 60px !important;
+    height: 64px !important;
     min-height: auto !important;
-    padding: 6px !important;
+    padding: 5px 3px !important;
     align-items: flex-start !important;
     justify-content: space-between !important;
     border-radius: 6px !important;
   }
+  
+  .mobile-pending-icon { width: 16px !important; height: 16px !important; font-size: 10px !important; }
+  .mobile-check-icon { width: 16px !important; height: 16px !important; }
+  .mobile-task-dot { width: 10px !important; height: 10px !important; }
+  .mobile-more-text { font-size: 0.65rem !important; }
   
   .responsive-dropdown {
     padding: 4px 8px !important;

@@ -123,7 +123,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
         }
         prevIsActiveRef.current = data.isActiveToday;
         setIsActiveToday(data.isActiveToday);
-      }, 1000);
+      }, 700);
     }
   }, [isModalOpen]);
 
@@ -313,7 +313,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               <button 
                 onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} 
                 disabled={!canGoBack} 
-                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-secondary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
                 <ChevronLeft size={19} />
               </button>
@@ -321,7 +321,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               <button 
                 onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} 
                 disabled={!canGoForward} 
-                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-secondary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
               >
                 <ChevronRight size={19} />
               </button>
@@ -411,7 +411,6 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                         display: 'flex',
                         flexDirection: 'column',
                         overflow: 'visible',
-                        opacity: (isPast && !isToday && peekDay !== dateStr) ? 0.6 : 1,
                         minWidth: 0,
                         zIndex: peekDay === dateStr ? 100 : 1
                       }}
@@ -432,14 +431,14 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                             ★ {dayData.event}
                           </div>
                           <div className="mobile-only" style={{
-                            position: 'absolute', top: '-6px', left: '50%', transform: 'translateX(-50%)',
-                            background: '#1a3056ff',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            color: 'var(--accent-primary)', fontSize: '0.4rem', fontWeight: 700,
-                            padding: '1px 4px', whiteSpace: 'nowrap', overflow: 'hidden',
+                            position: 'absolute', top: '-6px', left: '2px',
+                            background: '#1f3a68ff',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            color: '#60a5fa', fontSize: '0.5rem', fontWeight: 800,
+                            padding: '1px 2px', whiteSpace: 'nowrap', overflow: 'hidden',
                             textOverflow: 'ellipsis', textTransform: 'uppercase', letterSpacing: '0.2px',
-                            maxWidth: 'calc(100% - 2px)', zIndex: 15,
-                            borderRadius: '8px'
+                            maxWidth: 'calc(100% - 4px)', zIndex: 15,
+                            borderRadius: '4px', lineHeight: 1
                           }}>
                             {dayData.event}
                           </div>
@@ -447,7 +446,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                       )}
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', zIndex: 10 }}>
-                        <div className="calendar-day-number" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div className="calendar-day-number" style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: (isPast && !isToday && peekDay !== dateStr) ? 0.5 : 1 }}>
                           <span style={{ fontSize: isExpanded ? '1.2rem' : '1.05rem', fontWeight: isToday ? 700 : 500, color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)', lineHeight: 1 }}>
                             {day}
                           </span>
@@ -461,31 +460,31 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                         </div>
                       </div>
 
-                      <div className="mobile-only" style={{ width: '100%', flexDirection: 'column', gap: '2px', alignItems: 'flex-start', marginTop: 'auto' }}>
+                      <div className="mobile-only" style={{ width: '100%', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', marginTop: 'auto' }}>
                         {(completedChecklist.length > 0 || (isPast && !isToday && incompleteCount > 0)) && (
-                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
+                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                             {(isPast && !isToday && incompleteCount > 0) && (
-                              <div style={{ flexShrink: 0, width: '8px', height: '8px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)', marginRight: '1px' }}>
+                              <div style={{ flexShrink: 0, width: '11px', height: '11px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(252, 165, 165, 0.3)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7.5px', fontWeight: 900, color: '#fca5a5' }}>
                                 {incompleteCount}
                               </div>
                             )}
                             {completedChecklist.slice(0, 1).map((item, i) => (
-                              <CheckSquare key={'mcs'+i} size={8} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
+                              <CheckSquare key={'mcs'+i} size={11} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
                             ))}
                             {completedChecklist.length > 1 && (
-                              <div style={{ fontSize: '0.4rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 3px', borderRadius: '3px', fontWeight: 700, flexShrink: 0, marginLeft: '1px' }}>
+                              <div style={{ fontSize: '0.45rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '0px 2px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>
                                 +{completedChecklist.length - 1}
                               </div>
                             )}
                           </div>
                         )}
                         {dayData.tasks.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '3px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
+                          <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                             {dayData.tasks.slice(0, 2).map((task, i) => (
-                              <div key={'mts'+i} style={{ flexShrink: 0, width: '4px', height: '4px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
+                              <div key={'mts'+i} style={{ flexShrink: 0, width: '6px', height: '6px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
                             ))}
                             {dayData.tasks.length > 2 && (
-                              <div style={{ fontSize: '0.4rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 3px', borderRadius: '3px', fontWeight: 700, flexShrink: 0, marginLeft: '1px' }}>
+                              <div style={{ fontSize: '0.45rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '0px 2px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>
                                 +{dayData.tasks.length - 2}
                               </div>
                             )}
@@ -498,7 +497,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                         <div style={{ marginTop: '6px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                           {(isPast && !isToday && incompleteCount > 0) && (
                             <div className="task-dot-container" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.8, justifyContent: 'flex-start', width: 'max-content' }}>
-                              <div style={{ width: '12px', height: '12px', border: '1px solid #ef4444', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#ef4444' }}>
+                              <div style={{ width: '12px', height: '12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(252, 165, 165, 0.3)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 900, color: '#fca5a5' }}>
                                 {incompleteCount}
                               </div>
                               <div className="task-dot-tooltip">{incompleteCount} pending items</div>
@@ -506,15 +505,15 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                           )}
 
                           {completedChecklist.slice(0, 3).map((item, i) => (
-                            <div key={'c' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
-                              <CheckSquare size={10} color="#10b981" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                            <div key={'c' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
+                              <CheckSquare size={12} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{item.text}</span>
                             </div>
                           ))}
                           
                           {dayData.tasks.slice(0, 3 - Math.min(completedChecklist.length, 3)).map((task, i) => (
-                            <div key={'t' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
-                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
+                            <div key={'t' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{task.text}</span>
                             </div>
                           ))}
@@ -531,7 +530,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                             <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                               {(isPast && !isToday && incompleteCount > 0) && (
                                 <div className="task-dot-container" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', marginRight: '2px', width: 'max-content' }}>
-                                  <div style={{ width: '12px', height: '12px', border: '1px solid rgba(239, 68, 68, 0.8)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: 'rgba(239, 68, 68, 0.9)' }}>
+                                  <div style={{ width: '12px', height: '12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(252, 165, 165, 0.3)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 900, color: '#fca5a5' }}>
                                     {incompleteCount}
                                   </div>
                                   <div className="task-dot-tooltip">{incompleteCount} pending items</div>
