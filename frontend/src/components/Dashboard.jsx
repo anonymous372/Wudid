@@ -184,7 +184,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
               className="btn-icon"
               title={viewMode === 'calendar' ? 'Analytics' : 'Calendar'}
-              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined, padding: '6px' }}
+              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined }}
             >
               {viewMode === 'calendar' ? <BarChart2 size={19} /> : <CalendarIcon size={19} />}
             </button>
@@ -192,7 +192,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               onClick={() => setShowUpcomingEvents(true)}
               className="btn-icon"
               title="Upcoming Events"
-              style={{ padding: '6px' }}
+              style={{}}
             >
               <CalendarDays size={19} />
             </button>
@@ -200,7 +200,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
               onClick={() => setShowLabelManager(true)}
               className="btn-icon"
               title="Manage Labels"
-              style={{ padding: '6px' }}
+              style={{}}
             >
               <Tags size={19} />
             </button>
@@ -213,8 +213,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                 style={{
                   background: isThemeMenuOpen ? 'rgba(255,255,255,0.1)' : undefined,
                   borderColor: isThemeMenuOpen ? 'rgba(255,255,255,0.2)' : undefined,
-                  color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit',
-                  padding: '6px'
+                  color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit'
                 }}
               >
                 <Palette size={19} />

@@ -421,11 +421,15 @@ app.post('/api/events', authenticateToken, async (req, res) => {
   const eventName = name ? name.trim() : '';
   if (eventName && eventName.length > 50) return res.status(400).json({ error: 'Event name must be under 50 characters' });
   try {
-    await Event.findOneAndUpdate(
-      { user_id: req.user_id, date: date },
-      { name: eventName },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    if (!eventName) {
+      await Event.findOneAndDelete({ user_id: req.user_id, date: date });
+    } else {
+      await Event.findOneAndUpdate(
+        { user_id: req.user_id, date: date },
+        { name: eventName },
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+      );
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

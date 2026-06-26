@@ -147,6 +147,13 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
   .mobile-task-dot { width: 10px !important; height: 10px !important; }
   .mobile-more-text { font-size: 0.65rem !important; }
   
+  .btn-icon {
+    width: 31px !important;
+    height: 31px !important;
+    min-width: 31px !important;
+    min-height: 31px !important;
+  }
+  
   .responsive-dropdown {
     padding: 4px 8px !important;
     gap: 4px !important;
@@ -199,11 +206,16 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .btn-icon:hover {
