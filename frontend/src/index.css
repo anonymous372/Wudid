@@ -45,8 +45,8 @@
   pointer-events: none;
   transition: all 0.15s ease;
   z-index: 200;
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   margin-bottom: 6px;
   letter-spacing: 0.5px;
 }
@@ -103,36 +103,58 @@ button {
 }
 
 /* Typography */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 600;
   line-height: 1.2;
 }
 
-h1 { font-size: 2.5rem; margin-bottom: 24px; }
-h2 { font-size: 1.8rem; margin-bottom: 16px; }
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 24px;
+}
+
+h2 {
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+}
 
 /* Mobile Utilities */
-.mobile-only { display: none !important; }
-.desktop-only { display: block; }
-.theme-menu { right: 0; }
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: block;
+}
+
+.theme-menu {
+  right: 0;
+}
 
 @media (max-width: 768px) {
   .container {
     padding: 12px 8px !important;
   }
+
   .calendar-grid {
     grid-template-columns: repeat(7, 1fr) !important;
     gap: 4px !important;
   }
+
   .mobile-hide {
     display: none !important;
   }
+
   .desktop-only {
     display: none !important;
   }
+
   .mobile-only {
     display: flex !important;
   }
+
   .calendar-day {
     height: 64px !important;
     min-height: auto !important;
@@ -141,46 +163,69 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
     justify-content: space-between !important;
     border-radius: 6px !important;
   }
-  
-  .mobile-pending-icon { width: 16px !important; height: 16px !important; font-size: 10px !important; }
-  .mobile-check-icon { width: 16px !important; height: 16px !important; }
-  .mobile-task-dot { width: 10px !important; height: 10px !important; }
-  .mobile-more-text { font-size: 0.65rem !important; }
-  
+
+  .mobile-pending-icon {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 10px !important;
+  }
+
+  .mobile-check-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .mobile-task-dot {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .mobile-more-text {
+    font-size: 0.65rem !important;
+  }
+
   .btn-icon {
     width: 31px !important;
     height: 31px !important;
     min-width: 31px !important;
     min-height: 31px !important;
   }
-  
+
   .responsive-dropdown {
     padding: 4px 8px !important;
     gap: 4px !important;
     font-size: 0.8rem !important;
   }
+
   .responsive-close-btn {
     padding: 4px !important;
   }
+
   .responsive-close-btn svg {
     width: 18px !important;
     height: 18px !important;
   }
+
   .calendar-day-header {
     font-size: 0.75rem !important;
   }
+
   .calendar-day-number {
     font-size: 0.95rem !important;
   }
+
   h1 {
     font-size: 2rem !important;
   }
+
   .container {
     padding: 16px 8px !important;
   }
+
   .glass-card {
     padding: 16px !important;
   }
+
   .theme-menu {
     right: -40px !important;
   }
@@ -246,9 +291,11 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
   gap: 8px;
   font-size: 0.85rem;
 }
+
 .responsive-close-btn {
   padding: 8px;
 }
+
 .responsive-close-btn svg {
   width: 20px;
   height: 20px;
@@ -258,27 +305,48 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes streak-pop {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
-  50% { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+  }
+
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
 }
 
 .streak-celebrate {
@@ -292,7 +360,7 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
 /* Notebook Theme Styles */
 .notebook-paper {
   background-color: #0f172a !important;
-  background-image: 
+  background-image:
     linear-gradient(180deg, transparent 93px, rgba(239, 68, 68, 0.6) 93px, rgba(239, 68, 68, 0.6) 96px, transparent 96px),
     linear-gradient(90deg, transparent 36px, rgba(239, 68, 68, 0.4) 36px, rgba(239, 68, 68, 0.4) 38px, transparent 38px),
     linear-gradient(180deg, #0f172a 0px, #0f172a 93px, transparent 93px),
@@ -300,8 +368,22 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 32px !important;
   color: #f8fafc !important;
   border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.notebook-paper-mobile {
+  background-color: #0f172a !important;
+  background-image:
+    linear-gradient(180deg, transparent 61px, rgba(239, 68, 68, 0.6) 61px, rgba(239, 68, 68, 0.6) 64px, transparent 64px),
+    linear-gradient(90deg, transparent 36px, rgba(239, 68, 68, 0.4) 36px, rgba(239, 68, 68, 0.4) 38px, transparent 38px),
+    linear-gradient(180deg, #0f172a 0px, #0f172a 61px, transparent 61px),
+    linear-gradient(transparent 31px, rgba(255, 255, 255, 0.08) 31px, rgba(255, 255, 255, 0.08) 32px, transparent 32px) !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 32px !important;
+  color: #f8fafc !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .notebook-font {
@@ -316,6 +398,7 @@ h2 { font-size: 1.8rem; margin-bottom: 16px; }
 .recharts-layer {
   outline: none !important;
 }
+
 .recharts-wrapper *:focus {
   outline: none !important;
 }

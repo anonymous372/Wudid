@@ -172,7 +172,7 @@ app.get('/api/month/:year/:month', authenticateToken, async (req, res) => {
     const days = {};
     for (const item of checklistItems) {
       if (!days[item.date]) days[item.date] = { checklist: [], tasks: [], event: null };
-      days[item.date].checklist.push({ text: item.text, is_completed: item.is_completed });
+      days[item.date].checklist.push({ _id: item._id.toString(), text: item.text, is_completed: item.is_completed });
     }
     for (const task of tasksRaw) {
       if (!days[task.date]) days[task.date] = { checklist: [], tasks: [], event: null };
