@@ -292,10 +292,12 @@ app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) =
       dailyData[task.date].tasksCount++;
       if (task.is_completed) dailyData[task.date].completedTasksCount++;
       
-      const lblName = task.label_name || 'Unlabeled';
-      const lblColor = task.label_color || '#94a3b8';
-      if (!labelData[lblName]) labelData[lblName] = { name: lblName, color: lblColor, value: 0 };
-      labelData[lblName].value++;
+      if (task.is_completed) {
+        const lblName = task.label_name || 'Unlabeled';
+        const lblColor = task.label_color || '#94a3b8';
+        if (!labelData[lblName]) labelData[lblName] = { name: lblName, color: lblColor, value: 0 };
+        labelData[lblName].value++;
+      }
     }
     
     const dailyArray = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));

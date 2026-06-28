@@ -93,7 +93,7 @@ export default function AnalyticsGrid({ currentDate }) {
     const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
     
     for (const task of stats.rawTasks) {
-      if (task.date >= startStr && task.date <= endStr) {
+      if (task.date >= startStr && task.date <= endStr && task.is_completed) {
         const lblName = task.label_name || 'Unlabeled';
         const lblColor = task.label_color || '#94a3b8';
         if (!labelDataMap[lblName]) labelDataMap[lblName] = { name: lblName, color: lblColor, value: 0 };
