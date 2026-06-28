@@ -38,27 +38,21 @@ const eventSchema = new mongoose.Schema({
 eventSchema.index({ user_id: 1, date: 1 }, { unique: true });
 eventSchema.set('toJSON', toJSONOptions);
 
-const checklistItemSchema = new mongoose.Schema({
-  user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  date: { type: String, required: true },
-  text: { type: String, required: true },
-  is_completed: { type: Boolean, default: false }
-});
-checklistItemSchema.set('toJSON', toJSONOptions);
 
-const taskEntrySchema = new mongoose.Schema({
+const taskSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   date: { type: String, required: true },
   text: { type: String, required: true },
-  label_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Label', default: null }
+  is_completed: { type: Boolean, default: false },
+  label_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Label', default: null },
+  created_at: { type: Date, default: Date.now }
 });
-taskEntrySchema.set('toJSON', toJSONOptions);
+taskSchema.set('toJSON', toJSONOptions);
 
 module.exports = {
   User: mongoose.model('User', userSchema),
   MagicLink: mongoose.model('MagicLink', magicLinkSchema),
   Label: mongoose.model('Label', labelSchema),
   Event: mongoose.model('Event', eventSchema),
-  ChecklistItem: mongoose.model('ChecklistItem', checklistItemSchema),
-  TaskEntry: mongoose.model('TaskEntry', taskEntrySchema)
+  Task: mongoose.model('Task', taskSchema)
 };

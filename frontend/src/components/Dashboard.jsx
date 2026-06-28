@@ -8,108 +8,11 @@ import confetti from 'canvas-confetti';
 
 const API_BASE = 'http://localhost:3001/api';
 
-function MobileChecklistModal({ onClose, todayData, onUpdate, modalTheme }) {
-  const isNotebook = modalTheme === 'notebook';
-  const themeBg = isNotebook ? 'var(--notebook-bg)' : 'var(--bg-secondary)';
-  const themeBorder = isNotebook ? '1px solid var(--notebook-line)' : '1px solid var(--border-color)';
-
-  const toggleChecklist = (id, currentStatus) => {
-    fetch(`${API_BASE}/checklist/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_completed: !currentStatus })
-    }).then(() => { onUpdate(); });
-  };
-
-  const undoneItems = todayData.checklist.filter(i => !i.is_completed);
-  const doneItems = todayData.checklist.filter(i => i.is_completed);
-
-  return createPortal(
-    <div onClick={onClose} style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
-    }}>
-      <div
-        className={isNotebook ? 'notebook-paper-mobile' : 'glass glass-card'}
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: '90%',
-          maxWidth: '400px',
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          background: isNotebook ? undefined : 'rgba(15, 23, 42, 0.95)',
-          padding: isNotebook ? '0 16px 16px 16px' : '16px',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{
-          height: isNotebook ? '64px' : 'auto',
-          borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.1)',
-          paddingBottom: isNotebook ? '0' : '12px',
-          paddingTop: isNotebook ? '16px' : '0',
-          paddingLeft: isNotebook ? '32px' : '0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: isNotebook ? '0' : '16px'
-        }}>
-          <h2 className={isNotebook ? 'notebook-font' : ''} style={{ margin: 0, fontSize: isNotebook ? '1.8rem' : '1.25rem', fontWeight: isNotebook ? 'normal' : 800, color: isNotebook ? 'var(--notebook-ink)' : 'var(--text-primary)', lineHeight: isNotebook ? '32px' : '1.2' }}>
-            Today's Checklist
-          </h2>
-          <button className={isNotebook ? '' : 'btn-icon'} style={{ color: isNotebook ? 'var(--notebook-ink)' : 'var(--text-primary)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: isNotebook ? '4px' : '' }} onClick={onClose}><X size={24} /></button>
-        </div>
-        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0', paddingLeft: isNotebook ? '32px' : '0', display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '8px' }}>
-          {undoneItems.length === 0 && doneItems.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>No checklist items for today.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isNotebook ? '0' : '4px' }}>
-              {undoneItems.length !== 0 && <div style={{ height: isNotebook ? '32px' : 'auto', display: 'flex', alignItems: 'center', paddingLeft: isNotebook ? '0' : '0' }}>
-                <h3 className={isNotebook ? 'notebook-font' : ''} style={{ margin: 0, fontSize: isNotebook ? '1.2rem' : '1.2rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', lineHeight: isNotebook ? '32px' : '1.5' }}>
-                  Todo
-                </h3>
-              </div>
-              }
-              {undoneItems.map(item => (
-                <div key={item._id || item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: isNotebook ? '0 0 0 16px' : '4px 0 4px 16px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}>
-                  <button onClick={() => toggleChecklist(item._id || item.id, item.is_completed)} style={{ color: isNotebook ? 'var(--notebook-ink)' : 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: isNotebook ? '32px' : '26px', padding: 0 }}>
-                    <Square size={16} strokeWidth={isNotebook ? 2 : 2} />
-                  </button>
-                  <span className={isNotebook ? 'notebook-font' : ''} style={{ flex: 1, fontSize: isNotebook ? '1.1rem' : '1.1rem', color: isNotebook ? 'var(--notebook-ink)' : 'var(--text-primary)', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px' }}>{item.text}</span>
-                </div>
-              ))}
-              {/* {doneItems.length > 0 && undoneItems.length > 0 && <div style={{ height: isNotebook ? '32px' : '1px', background: isNotebook ? 'transparent' : 'rgba(255,255,255,0.1)', margin: isNotebook ? '0' : '8px 0', opacity: 0.5 }} />} */}
-              {doneItems.length > 0 && (
-                <div style={{ height: isNotebook ? '32px' : 'auto', display: 'flex', alignItems: 'center', paddingLeft: isNotebook ? '0' : '0' }}>
-                  <h3 className={isNotebook ? 'notebook-font' : ''} style={{ margin: 0, fontSize: isNotebook ? '1.2rem' : '1.05rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', lineHeight: isNotebook ? '32px' : '1.5' }}>
-                    Done
-                  </h3>
-                </div>
-              )}
-              {doneItems.map(item => (
-                <div key={item._id || item.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: isNotebook ? '0 0 0 16px' : '4px 0 4px 16px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto', opacity: 0.6, textDecoration: 'line-through' }}>
-                  <button onClick={() => toggleChecklist(item._id || item.id, item.is_completed)} style={{ color: isNotebook ? '#3b82f6' : '#10b981', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: isNotebook ? '32px' : '26px', padding: 0 }}>
-                    <CheckSquare size={16} strokeWidth={isNotebook ? 2 : 2.5} />
-                  </button>
-                  <span className={isNotebook ? 'notebook-font' : ''} style={{ flex: 1, fontSize: isNotebook ? '1.1rem' : '1rem', color: isNotebook ? 'var(--notebook-ink)' : 'var(--text-primary)', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px' }}>{item.text}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
 export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme, isModalOpen }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthData, setMonthData] = useState({});
   const [showLabelManager, setShowLabelManager] = useState(false);
   const [showUpcomingEvents, setShowUpcomingEvents] = useState(false);
-  const [showMobileChecklist, setShowMobileChecklist] = useState(false);
   const [peekDay, setPeekDay] = useState(null);
   const [expandedWeeks, setExpandedWeeks] = useState([]);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -247,7 +150,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  const isAnyModalOpen = isModalOpen || showLabelManager || showUpcomingEvents || showMobileChecklist || viewMode !== 'calendar';
+  const isAnyModalOpen = isModalOpen || showLabelManager || showUpcomingEvents || viewMode !== 'calendar';
 
   const themeBg = modalTheme === 'notebook' ? 'var(--notebook-bg)' : 'var(--bg-secondary)';
   const themeBorder = modalTheme === 'notebook' ? '1px solid var(--notebook-line)' : '1px solid var(--border-color)';
@@ -497,11 +400,13 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                   const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                   const isToday = dateStr === todayStr;
                   const isPast = new Date(dateStr) < new Date(todayStr);
-                  const dayData = monthData[dateStr] || { checklist: [], tasks: [], event: null };
+                  const dayData = monthData[dateStr] || { tasks: [], event: null };
 
-                  const completedChecklist = dayData.checklist.filter(i => i.is_completed);
-                  const incompleteChecklist = dayData.checklist.filter(i => !i.is_completed);
-                  const incompleteCount = incompleteChecklist.length;
+                  const completedTasks = dayData.tasks?.filter(t => t.is_completed) || [];
+                  const incompleteTasks = dayData.tasks?.filter(t => !t.is_completed) || [];
+                  const incompleteCount = incompleteTasks.length;
+                  const unlabeledCompleted = completedTasks.filter(t => !t.label_id);
+                  const labeledCompleted = completedTasks.filter(t => t.label_id);
 
                   return (
                     <div
@@ -562,14 +467,14 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                         <div className="desktop-only"
                           onMouseEnter={(e) => { e.stopPropagation(); setPeekDay(dateStr); }}
                           onMouseLeave={(e) => { e.stopPropagation(); setPeekDay(null); }}
-                          style={{ padding: '2px', display: (dayData.checklist.length > 0 || dayData.tasks.length > 0 || dayData.event) ? 'block' : 'none' }}
+                          style={{ padding: '2px', display: (dayData.tasks?.length > 0 || dayData.event) ? 'block' : 'none' }}
                         >
                           <Eye size={isExpanded ? 16 : 14} color="var(--text-secondary)" style={{ opacity: peekDay === dateStr ? 1 : 0.4, transition: 'opacity 0.2s' }} />
                         </div>
                       </div>
 
                       <div className="mobile-only" style={{ width: '100%', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', marginTop: 'auto' }}>
-                        {(completedChecklist.length > 0 || (isPast && !isToday && incompleteCount > 0) || (isToday && incompleteCount > 0)) && (
+                        {(unlabeledCompleted.length > 0 || (isPast && !isToday && incompleteCount > 0) || (isToday && incompleteCount > 0)) && (
                           <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                             {(isPast && !isToday && incompleteCount > 0) && (
                               <div style={{ flexShrink: 0, width: '11px', height: '11px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(252, 165, 165, 0.3)', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7.5px', fontWeight: 900, color: '#fca5a5' }}>
@@ -581,24 +486,24 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                                 {incompleteCount}
                               </div>
                             )}
-                            {completedChecklist.slice(0, 1).map((item, i) => (
+                            {unlabeledCompleted.slice(0, 1).map((item, i) => (
                               <CheckSquare key={'mcs' + i} size={11} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
                             ))}
-                            {completedChecklist.length > 1 && (
+                            {unlabeledCompleted.length > 1 && (
                               <div style={{ fontSize: '0.45rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '0px 2px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>
-                                +{completedChecklist.length - 1}
+                                +{unlabeledCompleted.length - 1}
                               </div>
                             )}
                           </div>
                         )}
-                        {dayData.tasks.length > 0 && (
+                        {labeledCompleted.length > 0 && (
                           <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '2px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
-                            {dayData.tasks.slice(0, 2).map((task, i) => (
+                            {labeledCompleted.slice(0, 2).map((task, i) => (
                               <div key={'mts' + i} style={{ flexShrink: 0, width: '6px', height: '6px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
                             ))}
-                            {dayData.tasks.length > 2 && (
+                            {labeledCompleted.length > 2 && (
                               <div style={{ fontSize: '0.45rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '0px 2px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>
-                                +{dayData.tasks.length - 2}
+                                +{labeledCompleted.length - 2}
                               </div>
                             )}
                           </div>
@@ -617,36 +522,36 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                               </div>
                             )}
 
-                            {isToday && incompleteChecklist.slice(0, 3).map((item, i) => (
+                            {isToday && incompleteTasks.slice(0, 3).map((item, i) => (
                               <div key={'inc' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
                                 <Square size={12} color="var(--text-secondary)" strokeWidth={2.5} style={{ flexShrink: 0 }} />
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{item.text}</span>
                               </div>
                             ))}
 
-                            {completedChecklist.slice(0, 3 - Math.min(isToday ? incompleteChecklist.length : 0, 3)).map((item, i) => (
+                            {unlabeledCompleted.slice(0, 3 - Math.min(isToday ? incompleteTasks.length : 0, 3)).map((item, i) => (
                               <div key={'c' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9, textDecoration: isToday ? 'line-through' : 'none' }}>
                                 <CheckSquare size={12} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} />
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{item.text}</span>
                               </div>
                             ))}
 
-                            {dayData.tasks.slice(0, 3 - Math.min((isToday ? incompleteChecklist.length : 0) + completedChecklist.length, 3)).map((task, i) => (
+                            {labeledCompleted.slice(0, 3 - Math.min((isToday ? incompleteTasks.length : 0) + unlabeledCompleted.length, 3)).map((task, i) => (
                               <div key={'t' + i} style={{ flexShrink: 0, fontSize: '0.7rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', opacity: 0.9 }}>
                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: '1.1' }}>{task.text}</span>
                               </div>
                             ))}
 
-                            {((isToday ? incompleteChecklist.length : 0) + completedChecklist.length + dayData.tasks.length > 3) && (
+                            {((isToday ? incompleteTasks.length : 0) + unlabeledCompleted.length + labeledCompleted.length > 3) && (
                               <div style={{ flexShrink: 0, fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600, paddingLeft: '15px' }}>
-                                +{(isToday ? incompleteChecklist.length : 0) + completedChecklist.length + dayData.tasks.length - 3} more
+                                +{(isToday ? incompleteTasks.length : 0) + unlabeledCompleted.length + labeledCompleted.length - 3} more
                               </div>
                             )}
                           </div>
                         ) : (
                           <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', width: '100%', overflow: 'hidden' }}>
-                            {(completedChecklist.length > 0 || (isPast && !isToday && incompleteCount > 0)) && (
+                            {(unlabeledCompleted.length > 0 || (isPast && !isToday && incompleteCount > 0)) && (
                               <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
                                 {(isPast && !isToday && incompleteCount > 0) && (
                                   <div className="task-dot-container" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', marginRight: '2px', width: 'max-content' }}>
@@ -656,22 +561,22 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                                     <div className="task-dot-tooltip">{incompleteCount} pending items</div>
                                   </div>
                                 )}
-                                {completedChecklist.slice(0, 4).map((item, i) => (
+                                {unlabeledCompleted.slice(0, 4).map((item, i) => (
                                   <div key={'cs' + i} className="task-dot-container" style={{ flexShrink: 0, width: 'max-content' }}>
                                     <CheckSquare size={12} color="#10b981" strokeWidth={3} />
                                     <div className="task-dot-tooltip">{item.text}</div>
                                   </div>
                                 ))}
-                                {completedChecklist.length > 4 && (
+                                {unlabeledCompleted.length > 4 && (
                                   <div style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '4px', fontWeight: 700, flexShrink: 0, marginLeft: '2px' }}>
-                                    +{completedChecklist.length - 4}
+                                    +{unlabeledCompleted.length - 4}
                                   </div>
                                 )}
                               </div>
                             )}
-                            {dayData.tasks.length > 0 && (
+                            {labeledCompleted.length > 0 && (
                               <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden', width: '100%' }}>
-                                {dayData.tasks.slice(0, 6).map((task, i) => (
+                                {labeledCompleted.slice(0, 6).map((task, i) => (
                                   <div key={'ts' + i} className="task-dot-container" style={{ flexShrink: 0 }}>
                                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)' }} />
                                     <div className="task-dot-tooltip">
@@ -679,9 +584,9 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                                     </div>
                                   </div>
                                 ))}
-                                {dayData.tasks.length > 6 && (
+                                {labeledCompleted.length > 6 && (
                                   <div style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '4px', fontWeight: 700, flexShrink: 0, marginLeft: '2px' }}>
-                                    +{dayData.tasks.length - 6}
+                                    +{labeledCompleted.length - 6}
                                   </div>
                                 )}
                               </div>
@@ -691,7 +596,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                       </div>
 
                       {/* Peek Popover */}
-                      {peekDay === dateStr && (dayData.checklist.length > 0 || dayData.tasks.length > 0 || dayData.event) && (
+                      {peekDay === dateStr && (dayData.tasks?.length > 0 || dayData.event) && (
                         <div style={{
                           position: 'absolute',
                           bottom: '100%',
@@ -721,27 +626,17 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                             )}
                           </div>
 
-                          {dayData.checklist.length > 0 && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Checklist</div>
-                              <div style={{ paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                {[...dayData.checklist].sort((a, b) => (a.is_completed === b.is_completed ? 0 : a.is_completed ? -1 : 1)).map((item, i) => (
-                                  <div key={'cp' + i} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: item.is_completed ? 0.5 : 1, textDecoration: item.is_completed ? 'line-through' : 'none', lineHeight: '1.2' }}>
-                                    {item.is_completed ? <CheckSquare size={10} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} /> : <Square size={10} color="var(--text-secondary)" strokeWidth={2.5} style={{ flexShrink: 0 }} />}
-                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.text}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
                           {dayData.tasks.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tasks Did</div>
-                              <div style={{ paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                {dayData.tasks.map((task, i) => (
-                                  <div key={'tp' + i} style={{ fontSize: '0.8rem', display: 'flex', gap: '8px', alignItems: 'center', lineHeight: '1.2' }}>
-                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color || 'var(--text-secondary)', flexShrink: 0 }} />
+                            <div style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tasks</div>
+                              <div style={{ paddingLeft: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {[...dayData.tasks].sort((a, b) => (a.is_completed === b.is_completed ? 0 : a.is_completed ? 1 : -1)).map((task, i) => (
+                                  <div key={'t' + i} style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', opacity: task.is_completed ? 0.5 : 1, textDecoration: task.is_completed ? 'line-through' : 'none', lineHeight: '1.2' }}>
+                                    {task.label_color ? (
+                                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.label_color, flexShrink: 0 }} />
+                                    ) : (
+                                      task.is_completed ? <CheckSquare size={10} color="#10b981" strokeWidth={3} style={{ flexShrink: 0 }} /> : <Square size={10} color="var(--text-secondary)" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+                                    )}
                                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.text}</span>
                                   </div>
                                 ))}
@@ -764,19 +659,10 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
       {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} onUpdate={onUpdate} />}
       {showUpcomingEvents && <UpcomingEvents onClose={() => setShowUpcomingEvents(false)} />}
 
-      {showMobileChecklist && (
-        <MobileChecklistModal
-          onClose={() => setShowMobileChecklist(false)}
-          todayData={monthData[`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`] || { checklist: [], tasks: [], event: null }}
-          onUpdate={onUpdate}
-          modalTheme={modalTheme}
-        />
-      )}
-
       {!isAnyModalOpen && createPortal(
         <button
           className="mobile-only"
-          onClick={() => setShowMobileChecklist(true)}
+          onClick={() => onSelectDay(todayStr)}
           style={{
             position: 'fixed',
             bottom: '64px',

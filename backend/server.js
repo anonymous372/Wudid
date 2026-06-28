@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { google } = require('googleapis');
 const mongoose = require('./db');
-const { User, MagicLink, Label, Event, ChecklistItem, TaskEntry } = require('./models');
+const { User, MagicLink, Label, Event, Task } = require('./models');
 
 const app = express();
 const PORT = 3001;
@@ -118,20 +118,8 @@ app.post('/api/auth/verify', async (req, res) => {
 
 app.get('/api/status', authenticateToken, async (req, res) => {
   try {
-    const minChecklist = await ChecklistItem.findOne({ user_id: req.user_id }).sort({ date: 1 }).select('date');
-    const minTask = await TaskEntry.findOne({ user_id: req.user_id }).sort({ date: 1 }).select('date');
-    
-    let d1 = minChecklist?.date;
-    let d2 = minTask?.date;
-    
-    let startDate = new Date().toISOString().split('T')[0];
-    if (d1 && d2) {
-      startDate = d1 < d2 ? d1 : d2;
-    } else if (d1) {
-      startDate = d1;
-    } else if (d2) {
-      startDate = d2;
-    }
+    const minTask = await Task.findOne({ user_id: req.user_id }).sort({ date: 1 }).select('date');
+    let startDate = minTask?.date || new Date().toISOString().split('T')[0];
     res.json({ startDate });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -141,8 +129,7 @@ app.get('/api/status', authenticateToken, async (req, res) => {
 app.get('/api/day/:date', authenticateToken, async (req, res) => {
   const { date } = req.params;
   try {
-    const checklist = await ChecklistItem.find({ date, user_id: req.user_id }).sort({ is_completed: 1, _id: 1 });
-    const tasksRaw = await TaskEntry.find({ date, user_id: req.user_id }).populate('label_id').sort({ _id: 1 });
+    const tasksRaw = await Task.find({ date, user_id: req.user_id }).populate('label_id').sort({ is_completed: 1, _id: 1 });
     
     const tasks = tasksRaw.map(t => {
       const json = t.toJSON();
@@ -155,7 +142,7 @@ app.get('/api/day/:date', authenticateToken, async (req, res) => {
     });
     
     const event = await Event.findOne({ date, user_id: req.user_id });
-    res.json({ checklist, tasks, event });
+    res.json({ tasks, event });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -165,60 +152,26 @@ app.get('/api/month/:year/:month', authenticateToken, async (req, res) => {
   const { year, month } = req.params;
   const prefix = new RegExp(`^${year}-${month.padStart(2, '0')}`);
   try {
-    const checklistItems = await ChecklistItem.find({ user_id: req.user_id, date: prefix }).sort({ _id: 1 });
-    const tasksRaw = await TaskEntry.find({ user_id: req.user_id, date: prefix }).populate('label_id').sort({ _id: 1 });
+    const tasksRaw = await Task.find({ user_id: req.user_id, date: prefix }).populate('label_id').sort({ is_completed: 1, _id: 1 });
     const events = await Event.find({ user_id: req.user_id, date: prefix });
     
     const days = {};
-    for (const item of checklistItems) {
-      if (!days[item.date]) days[item.date] = { checklist: [], tasks: [], event: null };
-      days[item.date].checklist.push({ _id: item._id.toString(), text: item.text, is_completed: item.is_completed });
-    }
     for (const task of tasksRaw) {
-      if (!days[task.date]) days[task.date] = { checklist: [], tasks: [], event: null };
+      if (!days[task.date]) days[task.date] = { tasks: [], event: null };
       days[task.date].tasks.push({ 
+        _id: task._id.toString(),
         text: task.text, 
+        is_completed: task.is_completed,
+        label_id: task.label_id ? task.label_id._id.toString() : null,
         label_color: task.label_id ? task.label_id.color : null, 
         label_name: task.label_id ? task.label_id.name : null 
       });
     }
     for (const evt of events) {
-      if (!days[evt.date]) days[evt.date] = { checklist: [], tasks: [], event: null };
+      if (!days[evt.date]) days[evt.date] = { tasks: [], event: null };
       days[evt.date].event = evt.name;
     }
     res.json(days);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/checklist', authenticateToken, async (req, res) => {
-  const { date, text } = req.body;
-  if (!text || text.length > 300) return res.status(400).json({ error: 'Text must be between 1 and 300 characters' });
-  try {
-    const count = await ChecklistItem.countDocuments({ date, user_id: req.user_id });
-    if (count >= 100) return res.status(400).json({ error: 'Max checklist items (100) reached for this day' });
-    const item = await ChecklistItem.create({ user_id: req.user_id, date, text, is_completed: false });
-    res.json(item.toJSON());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/checklist/:id', authenticateToken, async (req, res) => {
-  const { is_completed } = req.body;
-  try {
-    await ChecklistItem.findOneAndUpdate({ _id: req.params.id, user_id: req.user_id }, { is_completed: !!is_completed });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/checklist/:id', authenticateToken, async (req, res) => {
-  try {
-    await ChecklistItem.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
-    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -228,19 +181,33 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
   const { date, text, label_id } = req.body;
   if (!text || text.length > 300) return res.status(400).json({ error: 'Text must be between 1 and 300 characters' });
   try {
-    const count = await TaskEntry.countDocuments({ date, user_id: req.user_id });
+    const count = await Task.countDocuments({ date, user_id: req.user_id });
     if (count >= 100) return res.status(400).json({ error: 'Max tasks (100) reached for this day' });
-    const task = await TaskEntry.create({ user_id: req.user_id, date, text, label_id: label_id || null });
-    res.json({ id: task._id.toString() });
+    const task = await Task.create({ user_id: req.user_id, date, text, is_completed: false, label_id: label_id || null });
+    
+    // Return populated task so frontend has label data immediately if added
+    const populated = await Task.findById(task._id).populate('label_id');
+    const json = populated.toJSON();
+    if (populated.label_id) {
+      json.label_name = populated.label_id.name;
+      json.label_color = populated.label_id.color;
+      json.label_id = populated.label_id._id.toString();
+    }
+    res.json(json);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
-  const { label_id } = req.body;
+  const { text, is_completed, label_id } = req.body;
   try {
-    await TaskEntry.findOneAndUpdate({ _id: req.params.id, user_id: req.user_id }, { label_id: label_id || null });
+    const updateData = {};
+    if (text !== undefined) updateData.text = text;
+    if (is_completed !== undefined) updateData.is_completed = !!is_completed;
+    if (label_id !== undefined) updateData.label_id = label_id || null;
+    
+    await Task.findOneAndUpdate({ _id: req.params.id, user_id: req.user_id }, { $set: updateData });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -249,7 +216,7 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
-    await TaskEntry.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
+    await Task.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -258,9 +225,8 @@ app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
 
 app.get('/api/stats/streak', authenticateToken, async (req, res) => {
   try {
-    const cDates = await ChecklistItem.distinct('date', { user_id: req.user_id, is_completed: true });
-    const tDates = await TaskEntry.distinct('date', { user_id: req.user_id });
-    const dates = [...new Set([...cDates, ...tDates])].sort().reverse();
+    const dates = await Task.distinct('date', { user_id: req.user_id, is_completed: true });
+    dates.sort().reverse();
     
     let streak = 0;
     const todayStr = req.query.today || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
@@ -302,8 +268,7 @@ app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) =
   const { year, month } = req.params;
   const prefix = new RegExp(`^${year}-${month.padStart(2, '0')}`);
   try {
-    const checklistItems = await ChecklistItem.find({ date: prefix, user_id: req.user_id });
-    const tasksRaw = await TaskEntry.find({ date: prefix, user_id: req.user_id }).populate('label_id');
+    const tasksRaw = await Task.find({ date: prefix, user_id: req.user_id }).populate('label_id');
     
     const tasks = tasksRaw.map(t => {
       const json = t.toJSON();
@@ -315,20 +280,17 @@ app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) =
       return json;
     });
 
-    let totalCompletedChecklist = 0;
+    let totalCompletedTasks = 0;
     let totalTasks = tasks.length;
     const dailyData = {};
     const labelData = {};
     
-    for (const item of checklistItems) {
-      if (item.is_completed) totalCompletedChecklist++;
-      if (!dailyData[item.date]) dailyData[item.date] = { date: item.date, tasksCount: 0, checklistCount: 0 };
-      if (item.is_completed) dailyData[item.date].checklistCount++;
-    }
-    
     for (const task of tasks) {
-      if (!dailyData[task.date]) dailyData[task.date] = { date: task.date, tasksCount: 0, checklistCount: 0 };
+      if (task.is_completed) totalCompletedTasks++;
+      if (!dailyData[task.date]) dailyData[task.date] = { date: task.date, tasksCount: 0, completedTasksCount: 0 };
+      
       dailyData[task.date].tasksCount++;
+      if (task.is_completed) dailyData[task.date].completedTasksCount++;
       
       const lblName = task.label_name || 'Unlabeled';
       const lblColor = task.label_color || '#94a3b8';
@@ -339,7 +301,7 @@ app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) =
     const dailyArray = Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date));
     const labelArray = Object.values(labelData).sort((a, b) => b.value - a.value);
     
-    res.json({ totalTasks, totalCompletedChecklist, dailyData: dailyArray, labelData: labelArray, rawTasks: tasks });
+    res.json({ totalTasks, totalCompletedTasks, dailyData: dailyArray, labelData: labelArray, rawTasks: tasks });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -349,15 +311,10 @@ app.get('/api/stats/yearly/:year', authenticateToken, async (req, res) => {
   const { year } = req.params;
   const prefix = new RegExp(`^${year}-`);
   try {
-    const checklistItems = await ChecklistItem.find({ date: prefix, user_id: req.user_id, is_completed: true });
-    const tasks = await TaskEntry.find({ date: prefix, user_id: req.user_id });
+    const completedTasks = await Task.find({ date: prefix, user_id: req.user_id, is_completed: true });
     
     const dailyCounts = {};
-    for (const item of checklistItems) {
-      if (!dailyCounts[item.date]) dailyCounts[item.date] = 0;
-      dailyCounts[item.date]++;
-    }
-    for (const task of tasks) {
+    for (const task of completedTasks) {
       if (!dailyCounts[task.date]) dailyCounts[task.date] = 0;
       dailyCounts[task.date]++;
     }
@@ -371,7 +328,7 @@ app.get('/api/labels', authenticateToken, async (req, res) => {
   try {
     const labels = await Label.find({ user_id: req.user_id });
     const labelsWithCounts = await Promise.all(labels.map(async (label) => {
-      const taskCount = await TaskEntry.countDocuments({ label_id: label._id });
+      const taskCount = await Task.countDocuments({ label_id: label._id });
       return { ...label.toJSON(), taskCount };
     }));
     res.json(labelsWithCounts);

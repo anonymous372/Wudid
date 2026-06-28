@@ -8,7 +8,7 @@ const API_BASE = 'http://localhost:3001/api';
 
 export default function AnalyticsGrid({ currentDate }) {
   const [viewScope, setViewScope] = useState('month'); // 'week' or 'month'
-  const [stats, setStats] = useState({ totalTasks: 0, totalCompletedChecklist: 0, dailyData: [], labelData: [], rawTasks: [] });
+  const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);
   const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'smooth'
@@ -69,13 +69,11 @@ export default function AnalyticsGrid({ currentDate }) {
     const dayData = stats.dailyData.find(item => item.date === dateStr);
     const dateFormatted = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
     const tasksCount = dayData ? dayData.tasksCount : 0;
-    const checklistCount = dayData ? dayData.checklistCount : 0;
     return {
       dateNum: d.getDate(),
       dateFormatted,
       Tasks: tasksCount,
-      Checklist: checklistCount,
-      Total: tasksCount + checklistCount
+      Total: tasksCount
     };
   });
 
@@ -104,13 +102,6 @@ export default function AnalyticsGrid({ currentDate }) {
     }
     displayLabelData = Object.values(labelDataMap).sort((a, b) => b.value - a.value);
   }
-
-  const TasksShape = (props) => {
-    const { x, y, width, height, fill, payload } = props;
-    if (height === 0 || !height) return null;
-    const r = payload.Checklist > 0 ? 0 : 4;
-    return <Rectangle x={x} y={y} width={width} height={height} fill={fill} radius={[r, r, 0, 0]} />;
-  };
 
   const renderActiveShape = (props) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
@@ -162,10 +153,6 @@ export default function AnalyticsGrid({ currentDate }) {
           </div>
           <div style={{ width: '1px', height: '10px', background: 'rgba(255,255,255,0.2)' }} />
           <div style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-              <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#10b981' }} />
-              <span>{data.Checklist} Checklists</span>
-            </div>
             <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
               <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
               <span>{data.Tasks} Tasks</span>
@@ -277,8 +264,7 @@ export default function AnalyticsGrid({ currentDate }) {
                         <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                         <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="Tasks" stackId="a" fill="var(--accent-primary)" shape={TasksShape} />
-                        <Bar dataKey="Checklist" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Tasks" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     ) : (
                       <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>

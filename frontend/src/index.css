@@ -402,3 +402,14 @@ h2 {
 .recharts-wrapper *:focus {
   outline: none !important;
 }
+@media (min-width: 769px) {
+  .day-modal-container {
+    padding-right: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .day-modal-container {
+    padding-right: 6px !important;
+  }
+}

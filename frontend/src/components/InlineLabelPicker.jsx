@@ -52,23 +52,23 @@ export default function InlineLabelPicker({ currentLabelId, labels, onSelect, on
         onClick={toggleOpen}
         style={{
           background: currentLabel ? `${currentLabel.color}20` : 'transparent',
-          color: currentLabel ? currentLabel.color : 'var(--text-secondary)',
+          color: currentLabel ? currentLabel.color : '#fff',
           border: `1px solid ${currentLabel ? currentLabel.color + '40' : 'transparent'}`,
           padding: currentLabel ? '2px 6px' : '2px 4px',
           borderRadius: '12px',
-          fontSize: '0.65rem',
+          fontSize: '0.75rem',
           fontWeight: 600,
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
           cursor: 'pointer',
-          opacity: currentLabel ? 1 : 0.4,
+          opacity: 1,
           transition: 'all 0.2s',
           whiteSpace: 'nowrap',
           flexShrink: 0
         }}
         onMouseEnter={(e) => { if (!currentLabel) e.currentTarget.style.opacity = '0.8'; }}
-        onMouseLeave={(e) => { if (!currentLabel) e.currentTarget.style.opacity = '0.4'; }}
+        onMouseLeave={(e) => { if (!currentLabel) e.currentTarget.style.opacity = '1'; }}
       >
         <Tag size={currentLabel ? 12 : 14} />
         {currentLabel && <span>{currentLabel.name}</span>}
