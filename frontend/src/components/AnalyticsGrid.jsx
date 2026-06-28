@@ -68,7 +68,7 @@ export default function AnalyticsGrid({ currentDate }) {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const dayData = stats.dailyData.find(item => item.date === dateStr);
     const dateFormatted = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
-    const tasksCount = dayData ? dayData.tasksCount : 0;
+    const tasksCount = dayData ? dayData.completedTasksCount : 0;
     return {
       dateNum: d.getDate(),
       dateFormatted,
