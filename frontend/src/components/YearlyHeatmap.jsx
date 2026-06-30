@@ -2,18 +2,23 @@ import React, { useState, useEffect } from 'react';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function YearlyHeatmap({ year }) {
+export default function YearlyHeatmap({ year, selectedLabels = [] }) {
   const [data, setData] = useState({});
   const [hoverData, setHoverData] = useState(null);
   
   useEffect(() => {
-    fetch(`${API_BASE}/stats/yearly/${year}`, {
+    let url = `${API_BASE}/stats/yearly/${year}`;
+    if (selectedLabels && selectedLabels.length > 0) {
+      url += `?labels=${selectedLabels.join(',')}`;
+    }
+
+    fetch(url, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
     })
       .then(res => res.json())
       .then(resData => setData(resData))
       .catch(console.error);
-  }, [year]);
+  }, [year, selectedLabels]);
 
   // Generate all days in the year
   const startDate = new Date(year, 0, 1);

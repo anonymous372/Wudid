@@ -1,24 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Rectangle, Sector } from 'recharts';
-import { BarChart2, TrendingUp, Activity, ChevronDown } from 'lucide-react';
+import { BarChart2, TrendingUp, Activity, ChevronDown, Filter, Check } from 'lucide-react';
 import YearlyHeatmap from './YearlyHeatmap';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function AnalyticsGrid({ currentDate }) {
+export default function AnalyticsGrid({ currentDate, labels }) {
   const [viewScope, setViewScope] = useState('month'); // 'week' or 'month'
   const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);
   const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'smooth'
   const [isChartMenuOpen, setIsChartMenuOpen] = useState(false);
+  const [selectedLabels, setSelectedLabels] = useState([]);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
+        setIsFilterMenuOpen(false);
+      }
+    };
+    if (isFilterMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFilterMenuOpen]);
 
   useEffect(() => {
     setIsLoading(true);
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
-    
+
     fetch(`${API_BASE}/stats/monthly/${year}/${month}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
     })
@@ -64,11 +77,24 @@ export default function AnalyticsGrid({ currentDate }) {
     return dates;
   };
 
+  const isFilterActive = selectedLabels && selectedLabels.length > 0;
+
   const chartData = getFullRangeDates().map(d => {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const dayData = stats.dailyData.find(item => item.date === dateStr);
+
+    let tasksCount = 0;
+    if (isFilterActive && stats.rawTasks) {
+      tasksCount = stats.rawTasks.filter(t =>
+        t.date === dateStr &&
+        t.is_completed &&
+        (t.label_id ? selectedLabels.includes(t.label_id) : selectedLabels.includes('unlabeled'))
+      ).length;
+    } else {
+      const dayData = stats.dailyData.find(item => item.date === dateStr);
+      tasksCount = dayData ? dayData.completedTasksCount : 0;
+    }
+
     const dateFormatted = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`;
-    const tasksCount = dayData ? dayData.completedTasksCount : 0;
     return {
       dateNum: d.getDate(),
       dateFormatted,
@@ -78,27 +104,40 @@ export default function AnalyticsGrid({ currentDate }) {
   });
 
   let displayLabelData = stats.labelData;
-  if (viewScope === 'week' && stats.rawTasks) {
+  if ((viewScope === 'week' || isFilterActive) && stats.rawTasks) {
     const labelDataMap = {};
-    let endDate;
-    if (isCurrentMonth) {
-      endDate = new Date(today);
-    } else {
-      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
-    }
-    const startDate = new Date(endDate);
-    startDate.setDate(endDate.getDate() - 6);
-    
-    const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
-    const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-    
-    for (const task of stats.rawTasks) {
-      if (task.date >= startStr && task.date <= endStr && task.is_completed) {
-        const lblName = task.label_name || 'Unlabeled';
-        const lblColor = task.label_color || '#94a3b8';
-        if (!labelDataMap[lblName]) labelDataMap[lblName] = { name: lblName, color: lblColor, value: 0 };
-        labelDataMap[lblName].value++;
+    let startStr = '', endStr = '';
+
+    if (viewScope === 'week') {
+      let endDate;
+      if (isCurrentMonth) {
+        endDate = new Date(today);
+      } else {
+        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
       }
+      const startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - 6);
+
+      startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+      endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    }
+
+    for (const task of stats.rawTasks) {
+      if (!task.is_completed) continue;
+
+      if (viewScope === 'week' && (task.date < startStr || task.date > endStr)) {
+        continue;
+      }
+
+      if (isFilterActive) {
+        const match = task.label_id ? selectedLabels.includes(task.label_id) : selectedLabels.includes('unlabeled');
+        if (!match) continue;
+      }
+
+      const lblName = task.label_name || 'Unlabeled';
+      const lblColor = task.label_color || '#94a3b8';
+      if (!labelDataMap[lblName]) labelDataMap[lblName] = { name: lblName, color: lblColor, value: 0 };
+      labelDataMap[lblName].value++;
     }
     displayLabelData = Object.values(labelDataMap).sort((a, b) => b.value - a.value);
   }
@@ -132,7 +171,7 @@ export default function AnalyticsGrid({ currentDate }) {
       const data = payload[0].payload;
       const container = document.getElementById('analytics-tooltip-container');
       if (!container) return null;
-      
+
       return createPortal(
         <div style={{
           background: 'rgba(15, 23, 42, 0.8)',
@@ -167,16 +206,18 @@ export default function AnalyticsGrid({ currentDate }) {
 
   return (
     <div className="animate-fade-in" style={{ marginTop: '16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
-          <button 
+      <div className="analytics-header">
+        <div className="left-spacer" /> {/* Left spacer for perfect center alignment */}
+
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px', justifySelf: 'center' }}>
+          <button
             onClick={() => setViewScope('week')}
-            style={{ 
-              padding: '6px 16px', 
-              background: viewScope === 'week' ? 'var(--accent-primary)' : 'transparent', 
+            style={{
+              padding: '6px 16px',
+              background: viewScope === 'week' ? 'var(--accent-primary)' : 'transparent',
               color: viewScope === 'week' ? '#fff' : 'var(--text-secondary)',
-              border: 'none', 
-              borderRadius: '6px', 
+              border: 'none',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 600,
               transition: 'all 0.2s'
@@ -184,14 +225,14 @@ export default function AnalyticsGrid({ currentDate }) {
           >
             {weekTitle}
           </button>
-          <button 
+          <button
             onClick={() => setViewScope('month')}
-            style={{ 
-              padding: '6px 16px', 
-              background: viewScope === 'month' ? 'var(--accent-primary)' : 'transparent', 
+            style={{
+              padding: '6px 16px',
+              background: viewScope === 'month' ? 'var(--accent-primary)' : 'transparent',
               color: viewScope === 'month' ? '#fff' : 'var(--text-secondary)',
-              border: 'none', 
-              borderRadius: '6px', 
+              border: 'none',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 600,
               transition: 'all 0.2s'
@@ -199,6 +240,93 @@ export default function AnalyticsGrid({ currentDate }) {
           >
             Full Month
           </button>
+        </div>
+
+        <div style={{ justifySelf: 'end', position: 'relative' }} ref={filterMenuRef}>
+          <button
+            onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
+            className="btn-icon"
+            title="Filter by Label"
+            style={{
+              background: isFilterMenuOpen || selectedLabels.length > 0 ? 'rgba(59, 130, 246, 0.15)' : 'var(--glass-bg)',
+              borderColor: isFilterMenuOpen || selectedLabels.length > 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.1)',
+              color: isFilterMenuOpen || selectedLabels.length > 0 ? 'var(--accent-primary)' : 'inherit',
+              position: 'relative',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Filter size={16} />
+            {selectedLabels.length > 0 && (
+              <span style={{ position: 'absolute', top: -2, right: -2, background: 'var(--accent-primary)', width: 8, height: 8, borderRadius: '50%', border: '2px solid var(--bg-color)' }} />
+            )}
+          </button>
+
+          {isFilterMenuOpen && (
+            <div className="theme-menu animate-fade-in" style={{
+              position: 'absolute',
+              top: '100%',
+              right: '0px',
+              marginTop: '8px',
+              background: 'rgba(15, 23, 42, 0.95)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px',
+              padding: '6px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+              zIndex: 100,
+              minWidth: '180px',
+              boxShadow: '0 10px 30px -10px rgba(0,0,0,0.8)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter</span>
+                {selectedLabels.length > 0 && (
+                  <button onClick={() => setSelectedLabels([])} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}>Clear</button>
+                )}
+              </div>
+
+              <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }} className="custom-scrollbar">
+                {labels && [...labels, { id: 'unlabeled', name: 'Unlabeled', color: '#64748b' }].map(label => {
+                  const labelId = label.id || label._id;
+                  const isSelected = selectedLabels.includes(labelId);
+                  return (
+                    <button
+                      key={labelId}
+                      onClick={() => {
+                        setSelectedLabels(prev =>
+                          prev.includes(labelId)
+                            ? prev.filter(id => id !== labelId)
+                            : [...prev, labelId]
+                        );
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '6px 8px', border: 'none',
+                        background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        color: isSelected ? '#fff' : 'var(--text-primary)',
+                        cursor: 'pointer', borderRadius: '6px', fontSize: '0.8rem', textAlign: 'left',
+                        transition: 'none'
+                      }}
+                      onMouseOver={e => {
+                        if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                      }}
+                      onMouseOut={e => {
+                        if (!isSelected) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: label.color, flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: isSelected ? 500 : 400 }}>{label.name}</span>
+                      </div>
+                      {isSelected && <Check size={14} color="var(--accent-primary)" style={{ flexShrink: 0 }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -214,7 +342,7 @@ export default function AnalyticsGrid({ currentDate }) {
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <button 
+                  <button
                     onClick={() => setIsChartMenuOpen(!isChartMenuOpen)}
                     style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s ease' }}
                   >
@@ -312,12 +440,12 @@ export default function AnalyticsGrid({ currentDate }) {
                           <Cell key={`cell-${index}`} fill={entry.color} style={{ outline: 'none' }} />
                         ))}
                       </Pie>
-                      <Legend 
-                        layout="vertical" 
-                        verticalAlign="middle" 
-                        align="right" 
-                        iconType="circle" 
-                        wrapperStyle={{ fontSize: '12px' }} 
+                      <Legend
+                        layout="vertical"
+                        verticalAlign="middle"
+                        align="right"
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: '12px' }}
                         formatter={(value) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
                       />
                     </PieChart>
@@ -331,7 +459,7 @@ export default function AnalyticsGrid({ currentDate }) {
             </div>
           </div>
 
-          <YearlyHeatmap year={currentDate.getFullYear()} />
+          <YearlyHeatmap year={currentDate.getFullYear()} selectedLabels={selectedLabels} />
         </>
       )}
     </div>

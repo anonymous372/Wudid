@@ -311,9 +311,26 @@ app.get('/api/stats/monthly/:year/:month', authenticateToken, async (req, res) =
 
 app.get('/api/stats/yearly/:year', authenticateToken, async (req, res) => {
   const { year } = req.params;
+  const { labels } = req.query;
   const prefix = new RegExp(`^${year}-`);
   try {
-    const completedTasks = await Task.find({ date: prefix, user_id: req.user_id, is_completed: true });
+    const query = { date: prefix, user_id: req.user_id, is_completed: true };
+    if (labels) {
+      const labelIds = labels.split(',');
+      const validIds = labelIds.filter(id => id !== 'unlabeled');
+      const orConditions = [];
+      if (validIds.length > 0) {
+          orConditions.push({ label_id: { $in: validIds } });
+      }
+      if (labelIds.includes('unlabeled')) {
+          orConditions.push({ label_id: null });
+      }
+      if (orConditions.length > 0) {
+          query.$or = orConditions;
+      }
+    }
+
+    const completedTasks = await Task.find(query);
     
     const dailyCounts = {};
     for (const task of completedTasks) {
