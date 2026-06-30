@@ -435,9 +435,19 @@ export default function AnalyticsGrid({ currentDate, labels }) {
             </div>
 
             <div className="glass glass-card" style={{ height: '300px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Label Breakdown</h3>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Label Breakdown</h3>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
+                </div>
+                {displayLabelData.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>Total</span>
+                    <span style={{ fontSize: '1.0rem', color: 'var(--accent-primary)', fontWeight: 500, lineHeight: 0.8 }}>
+                      {displayLabelData.reduce((sum, item) => sum + item.value, 0)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {displayLabelData.length > 0 ? (
