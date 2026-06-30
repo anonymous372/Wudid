@@ -23,7 +23,18 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const pendingStreakRef = useRef(null);
   const isModalOpenRef = useRef(isModalOpen);
   const streakBadgeRef = useRef(null);
-  const [viewMode, setViewMode] = useState('calendar');
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('wudid_dashboard_view_mode');
+      return saved ? saved : 'calendar';
+    } catch (e) {
+      return 'calendar';
+    }
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('wudid_dashboard_view_mode', viewMode);
+  }, [viewMode]);
   const themeMenuRef = useRef(null);
 
   useEffect(() => {

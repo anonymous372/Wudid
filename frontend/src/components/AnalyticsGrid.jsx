@@ -11,9 +11,31 @@ export default function AnalyticsGrid({ currentDate, labels }) {
   const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);
-  const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'smooth'
+  const [chartType, setChartType] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wudid_analytics_chart_type');
+      return saved ? saved : 'bar';
+    } catch (e) {
+      return 'bar';
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('wudid_analytics_chart_type', chartType);
+  }, [chartType]);
   const [isChartMenuOpen, setIsChartMenuOpen] = useState(false);
-  const [selectedLabels, setSelectedLabels] = useState([]);
+  const [selectedLabels, setSelectedLabels] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wudid_analytics_filters');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('wudid_analytics_filters', JSON.stringify(selectedLabels));
+  }, [selectedLabels]);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef(null);
 
