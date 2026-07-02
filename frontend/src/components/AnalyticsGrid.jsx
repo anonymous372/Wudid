@@ -6,11 +6,16 @@ import YearlyHeatmap from './YearlyHeatmap';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function AnalyticsGrid({ currentDate, labels }) {
+export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   const [viewScope, setViewScope] = useState('month'); // 'week' or 'month'
   const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);
+  const monthCacheRef = useRef({});
+
+  useEffect(() => {
+    monthCacheRef.current = {};
+  }, [refreshKey]);
   const [chartType, setChartType] = useState(() => {
     try {
       const saved = localStorage.getItem('wudid_analytics_chart_type');
@@ -49,25 +54,6 @@ export default function AnalyticsGrid({ currentDate, labels }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isFilterMenuOpen]);
 
-  useEffect(() => {
-    setIsLoading(true);
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-
-    fetch(`${API_BASE}/stats/monthly/${year}/${month}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setStats(data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setIsLoading(false);
-      });
-  }, [currentDate]);
-
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName = monthNames[currentDate.getMonth()];
   const today = new Date();
@@ -98,6 +84,86 @@ export default function AnalyticsGrid({ currentDate, labels }) {
     }
     return dates;
   };
+
+  useEffect(() => {
+    setIsLoading(true);
+    const dates = getFullRangeDates();
+    const monthsToFetch = new Map();
+    dates.forEach(d => {
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      monthsToFetch.set(key, { year: d.getFullYear(), month: d.getMonth() + 1, key });
+    });
+
+    const token = localStorage.getItem('wudid_jwt');
+    const uncachedMonths = [];
+    const cachedResults = [];
+
+    monthsToFetch.forEach(({ year, month, key }) => {
+      if (monthCacheRef.current[key]) {
+        cachedResults.push(monthCacheRef.current[key]);
+      } else {
+        uncachedMonths.push({ year, month, key });
+      }
+    });
+
+    const processResults = (results) => {
+      let combinedTasks = [];
+      let combinedDaily = [];
+      let totalTasks = 0;
+      let totalCompletedTasks = 0;
+      const labelDataMap = {};
+
+      results.forEach(data => {
+        if (data.rawTasks) combinedTasks = combinedTasks.concat(data.rawTasks);
+        if (data.dailyData) combinedDaily = combinedDaily.concat(data.dailyData);
+        totalTasks += data.totalTasks || 0;
+        totalCompletedTasks += data.totalCompletedTasks || 0;
+        if (data.labelData) {
+          data.labelData.forEach(l => {
+            if (!labelDataMap[l.name]) labelDataMap[l.name] = { ...l };
+            else labelDataMap[l.name].value += l.value;
+          });
+        }
+      });
+
+      const combinedLabels = Object.values(labelDataMap).sort((a, b) => b.value - a.value);
+
+      setStats({
+        totalTasks,
+        totalCompletedTasks,
+        dailyData: combinedDaily,
+        labelData: combinedLabels,
+        rawTasks: combinedTasks
+      });
+      setIsLoading(false);
+    };
+
+    if (uncachedMonths.length === 0) {
+      processResults(cachedResults);
+      return;
+    }
+
+    setIsLoading(true);
+    const fetchPromises = uncachedMonths.map(({ year, month, key }) =>
+      fetch(`${API_BASE}/stats/monthly/${year}/${month}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          monthCacheRef.current[key] = data;
+          return data;
+        })
+    );
+
+    Promise.all(fetchPromises)
+      .then(newResults => {
+        processResults([...cachedResults, ...newResults]);
+      })
+      .catch(err => {
+        console.error(err);
+        setIsLoading(false);
+      });
+  }, [currentDate, viewScope, refreshKey]);
 
   const isFilterActive = selectedLabels && selectedLabels.length > 0;
 
@@ -490,10 +556,10 @@ export default function AnalyticsGrid({ currentDate, labels }) {
               )}
             </div>
           </div>
-
-          <YearlyHeatmap year={currentDate.getFullYear()} selectedLabels={selectedLabels} />
         </>
       )}
+
+      <YearlyHeatmap year={currentDate.getFullYear()} selectedLabels={selectedLabels} refreshKey={refreshKey} />
     </div>
   );
 }

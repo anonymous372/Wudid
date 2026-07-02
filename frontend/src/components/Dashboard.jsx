@@ -664,7 +664,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
           })}
         </div>
       ) : (
-        <AnalyticsGrid currentDate={currentDate} labels={labels} />
+        <AnalyticsGrid currentDate={currentDate} labels={labels} refreshKey={refreshKey} />
       )}
 
       {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} onUpdate={onUpdate} />}

@@ -1,12 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function YearlyHeatmap({ year, selectedLabels = [] }) {
+export default function YearlyHeatmap({ year, selectedLabels = [], refreshKey }) {
   const [data, setData] = useState({});
   const [hoverData, setHoverData] = useState(null);
-  
+  const cacheRef = useRef({});
+
   useEffect(() => {
+    cacheRef.current = {};
+  }, [refreshKey]);
+
+  useEffect(() => {
+    const cacheKey = `${year}_${selectedLabels.join(',')}`;
+    if (cacheRef.current[cacheKey]) {
+      setData(cacheRef.current[cacheKey]);
+      return;
+    }
+
     let url = `${API_BASE}/stats/yearly/${year}`;
     if (selectedLabels && selectedLabels.length > 0) {
       url += `?labels=${selectedLabels.join(',')}`;
@@ -16,9 +27,12 @@ export default function YearlyHeatmap({ year, selectedLabels = [] }) {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('wudid_jwt')}` }
     })
       .then(res => res.json())
-      .then(resData => setData(resData))
+      .then(resData => {
+        cacheRef.current[cacheKey] = resData;
+        setData(resData);
+      })
       .catch(console.error);
-  }, [year, selectedLabels]);
+  }, [year, selectedLabels, refreshKey]);
 
   // Generate all days in the year
   const startDate = new Date(year, 0, 1);
