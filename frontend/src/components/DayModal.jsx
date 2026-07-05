@@ -171,6 +171,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, onNavigate, 
   const [copiedStatus, setCopiedStatus] = useState(false);
 
   const handleShare = () => {
+    if (tasks.length === 0) return;
     let text = `🚀 *Wudid Update - ${formattedDate}*\n\n`;
     if (complete.length > 0) {
       complete.forEach(item => {
@@ -279,7 +280,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, onNavigate, 
               onClick={handleShare}
               title="Copy progress to clipboard"
               style={{
-                color: copiedStatus ? '#10b981' : '#fff',
+                color: tasks.length === 0 ? '#64748b' : (copiedStatus ? '#10b981' : '#fff'),
+                opacity: tasks.length === 0 ? 0.35 : 1,
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',

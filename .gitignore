@@ -42,3 +42,7 @@ backend/wudid.db
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea/
+
+# AI / Agent Customization Files
+.agents/
+AGENTS.md

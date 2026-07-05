@@ -7,7 +7,19 @@ import YearlyHeatmap from './YearlyHeatmap';
 const API_BASE = 'http://localhost:3001/api';
 
 export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
-  const [viewScope, setViewScope] = useState('month'); // 'week' or 'month'
+  const [viewScope, setViewScope] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wudid_analytics_view_scope');
+      return saved ? saved : 'month';
+    } catch (e) {
+      return 'month';
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('wudid_analytics_view_scope', viewScope);
+  }, [viewScope]);
+
   const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);

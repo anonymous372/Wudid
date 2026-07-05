@@ -245,6 +245,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
                 <div className="theme-menu" style={{
                   position: 'absolute',
                   top: '100%',
+                  right: 0,
                   marginTop: '8px',
                   background: 'var(--bg-color)',
                   border: '1px solid var(--glass-border)',
