@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2, Share, Copy, Undo2, MoreVertical } from 'lucide-react';
+import { X, Pencil, Plus, CheckSquare, Square, Circle, Trash2, Share, Copy, Undo2, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import InlineLabelPicker from './InlineLabelPicker';
 import LabelManager from './LabelManager';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
+export default function DayModal({ date, labels, onUpdate, onClose, onNavigate, theme }) {
   const [tasks, setTasks] = useState([]);
   const [event, setEvent] = useState(null);
 
@@ -16,7 +16,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
 
   const [showLabelManager, setShowLabelManager] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
-  
+
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskText, setEditingTaskText] = useState('');
 
@@ -35,9 +35,65 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
       .catch(console.error);
   };
 
+  const [animDir, setAnimDir] = useState('none');
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const getAdjacentDateStr = (offset) => {
+    const [y, m, d] = date.split('-').map(Number);
+    const curr = new Date(y, m - 1, d);
+    curr.setDate(curr.getDate() + offset);
+    return `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+  };
+
+  const handleNavigate = (offset) => {
+    if (!onNavigate) return;
+    setAnimDir(offset > 0 ? 'next' : 'prev');
+    onNavigate(getAdjacentDateStr(offset));
+  };
+
   useEffect(() => {
     fetchDayData();
+    setEditingTaskId(null);
+    setEditingTaskText('');
+    setOpenMenu(null);
+    setIsEditingEvent(false);
   }, [date]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+      if (e.key === 'ArrowLeft') {
+        handleNavigate(-1);
+      } else if (e.key === 'ArrowRight') {
+        handleNavigate(1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [date, onNavigate]);
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    if (Math.abs(distanceX) > Math.abs(distanceY) * 1.5 && Math.abs(distanceX) > 50) {
+      if (distanceX > 0) {
+        handleNavigate(1);
+      } else {
+        handleNavigate(-1);
+      }
+    }
+  };
 
   const saveEvent = () => {
     fetch(`${API_BASE}/events`, {
@@ -67,7 +123,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
   };
 
   const toggleTask = (id, currentStatus) => {
-    if (isFuture) return;
+    if (isFuture && !currentStatus) return;
     fetch(`${API_BASE}/tasks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -95,11 +151,11 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: editingTaskText })
-    }).then(() => { 
+    }).then(() => {
       setEditingTaskId(null);
       setEditingTaskText('');
-      fetchDayData(); 
-      onUpdate(); 
+      fetchDayData();
+      onUpdate();
     });
   };
 
@@ -141,8 +197,28 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px'
     }} onClick={onClose}>
 
+      <button
+        onClick={(e) => { e.stopPropagation(); handleNavigate(-1); }}
+        className={`day-nav-edge-btn day-nav-edge-btn-left ${isNotebook ? 'notebook-edge' : ''}`}
+        title="Previous day (Left Arrow)"
+      >
+        <ChevronLeft size={44} strokeWidth={1.7} />
+      </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); handleNavigate(1); }}
+        className={`day-nav-edge-btn day-nav-edge-btn-right ${isNotebook ? 'notebook-edge' : ''}`}
+        title="Next day (Right Arrow)"
+      >
+        <ChevronRight size={44} strokeWidth={1.7} />
+      </button>
+
       <div
+        key={date}
         className={`day-modal-container ${isNotebook ? 'notebook-paper' : 'glass glass-card'}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           width: '90%',
           maxWidth: isNotebook ? '520px' : '600px',
@@ -151,7 +227,12 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
           flexDirection: 'column',
           background: isNotebook ? undefined : 'rgba(15, 23, 42, 0.95)',
           padding: isNotebook ? '0 0px 16px 16px' : '16px 0px 16px 16px',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          animation: animDir === 'next'
+            ? 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            : animDir === 'prev'
+              ? 'slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+              : 'fadeIn 0.25s ease-out'
         }}
         onClick={e => {
           e.stopPropagation();
@@ -232,11 +313,15 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                   key={task._id || task.id}
                   style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '4px 8px 4px 12px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto' }}
                 >
-                  {!isFuture ? (
+                  {isFuture ? (
+                    <div style={{ color: 'var(--text-secondary)', opacity: 0.3, display: 'flex', alignItems: 'center', height: isNotebook ? '32px' : '26px', cursor: 'default' }} title="Cannot complete future tasks">
+                      <Square size={16} strokeWidth={isNotebook ? 2 : 2} />
+                    </div>
+                  ) : (
                     <button onClick={() => toggleTask(task._id || task.id, task.is_completed)} style={{ color: isNotebook ? '#f8fafc' : 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', height: isNotebook ? '32px' : '26px' }}>
                       <Square size={16} strokeWidth={isNotebook ? 2 : 2} />
                     </button>
-                  ) : <div style={{ width: '16px', height: isNotebook ? '32px' : '26px' }} />}
+                  )}
 
                   {editingTaskId === (task._id || task.id) ? (
                     <form onSubmit={(e) => { e.preventDefault(); updateTaskText(task._id || task.id); }} style={{ flex: 1, display: 'flex' }}>
@@ -245,13 +330,29 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                         value={editingTaskText}
                         onChange={e => setEditingTaskText(e.target.value)}
                         onBlur={() => updateTaskText(task._id || task.id)}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') {
+                            setEditingTaskId(null);
+                            setEditingTaskText('');
+                          }
+                        }}
                         autoFocus
                         className={isNotebook ? 'notebook-font' : ''}
                         style={{ background: isNotebook ? 'rgba(255,255,255,0.03)' : 'transparent', border: 'none', borderBottom: isNotebook ? '1px solid rgba(255,255,255,0.1)' : 'none', color: isNotebook ? '#f8fafc' : '#fff', fontSize: isNotebook ? '1.05rem' : '1.05rem', outline: 'none', flex: 1, lineHeight: isNotebook ? '28px' : '1.5', height: isNotebook ? '28px' : 'auto', paddingLeft: isNotebook ? '8px' : '0', borderRadius: isNotebook ? '4px' : '0' }}
                       />
                     </form>
                   ) : (
-                    <span className={isNotebook ? 'notebook-font' : ''} style={{ flex: 1, fontSize: isNotebook ? '1.1rem' : '1.05rem', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px' }}>{task.text}</span>
+                    <span
+                      className={isNotebook ? 'notebook-font' : ''}
+                      onDoubleClick={() => {
+                        setEditingTaskId(task._id || task.id);
+                        setEditingTaskText(task.text);
+                      }}
+                      title="Double-click to edit"
+                      style={{ flex: 1, fontSize: isNotebook ? '1.1rem' : '1.05rem', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px', cursor: 'pointer' }}
+                    >
+                      {task.text}
+                    </span>
                   )}
 
                   {editingTaskId !== (task._id || task.id) && (
@@ -262,18 +363,25 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                         onSelect={(labelId) => updateTaskLabel(task._id || task.id, labelId)}
                         onManageLabels={() => setShowLabelManager(true)}
                       />
-                      {!isFuture && (
+                      <div style={{ position: 'relative' }}>
                         <button
-                          className="trash-btn"
-                          onClick={() => deleteTask(task._id || task.id)}
+                          className="more-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (openMenu?.id === (task._id || task.id)) {
+                              setOpenMenu(null);
+                            } else {
+                              setOpenMenu({ id: task._id || task.id, rect: e.currentTarget.getBoundingClientRect(), task });
+                            }
+                          }}
                           style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 1, transition: 'color 0.2s', padding: '4px' }}
-                          onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                          onMouseEnter={e => e.currentTarget.style.color = isNotebook ? '#f8fafc' : '#e2e8f0'}
                           onMouseLeave={e => e.currentTarget.style.color = '#fff'}
-                          title="Delete task"
+                          title="More options"
                         >
-                          <Trash2 size={14} />
+                          <MoreVertical size={16} />
                         </button>
-                      )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -294,7 +402,7 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
           </section>
 
           {complete.length > 0 && (
-            <section style={{ opacity: isFuture ? 0.4 : 1, pointerEvents: isFuture ? 'none' : 'auto' }}>
+            <section style={{ opacity: 1, pointerEvents: 'auto' }}>
               {isNotebook && <div style={{ height: '32px' }} />}
               <h3 className={isNotebook ? 'notebook-font' : ''} style={{ position: 'relative', display: 'flex', alignItems: 'center', margin: 0, fontSize: isNotebook ? '1.3rem' : '1.1rem', color: isNotebook ? '#94a3b8' : 'var(--text-secondary)', marginBottom: isNotebook ? '0' : '12px', borderBottom: isNotebook ? 'none' : '1px solid rgba(255,255,255,0.05)', paddingBottom: isNotebook ? '0' : '8px', paddingLeft: isNotebook ? '8px' : '12px', textTransform: isNotebook ? 'none' : 'uppercase', letterSpacing: isNotebook ? '0' : '1px', lineHeight: isNotebook ? '32px' : '1.2', height: isNotebook ? '32px' : 'auto' }}>
                 Done
@@ -305,8 +413,8 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                     key={task._id || task.id}
                     style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', padding: isNotebook ? '0 0 0 16px' : '4px 8px 4px 12px', minHeight: isNotebook ? '32px' : 'auto', height: 'auto', opacity: 1 }}
                   >
-                    <div style={{ width: '16px', height: isNotebook ? '32px' : '26px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <CheckSquare size={16} strokeWidth={2} color="#10b981" />
+                    <div style={{ color: '#10b981', display: 'flex', alignItems: 'center', height: isNotebook ? '32px' : '26px', cursor: 'default' }} title="Use the 3-dot menu to mark undone">
+                      <CheckSquare size={16} strokeWidth={2} />
                     </div>
 
                     {editingTaskId === (task._id || task.id) ? (
@@ -316,13 +424,29 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                           value={editingTaskText}
                           onChange={e => setEditingTaskText(e.target.value)}
                           onBlur={() => updateTaskText(task._id || task.id)}
+                          onKeyDown={e => {
+                            if (e.key === 'Escape') {
+                              setEditingTaskId(null);
+                              setEditingTaskText('');
+                            }
+                          }}
                           autoFocus
                           className={isNotebook ? 'notebook-font' : ''}
                           style={{ background: isNotebook ? 'rgba(255,255,255,0.03)' : 'transparent', border: 'none', borderBottom: isNotebook ? '1px solid rgba(255,255,255,0.1)' : 'none', color: isNotebook ? '#f8fafc' : '#fff', fontSize: isNotebook ? '1.05rem' : '1.05rem', outline: 'none', flex: 1, lineHeight: isNotebook ? '28px' : '1.5', height: isNotebook ? '28px' : 'auto', paddingLeft: isNotebook ? '8px' : '0', borderRadius: isNotebook ? '4px' : '0' }}
                         />
                       </form>
                     ) : (
-                      <span className={isNotebook ? 'notebook-font' : ''} style={{ flex: 1, textDecoration: 'none', fontSize: isNotebook ? '1.1rem' : '1.05rem', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px' }}>{task.text}</span>
+                      <span
+                        className={isNotebook ? 'notebook-font' : ''}
+                        onDoubleClick={() => {
+                          setEditingTaskId(task._id || task.id);
+                          setEditingTaskText(task.text);
+                        }}
+                        title="Double-click to edit"
+                        style={{ flex: 1, textDecoration: 'none', fontSize: isNotebook ? '1.1rem' : '1.05rem', lineHeight: isNotebook ? '32px' : '1.5', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, textOverflow: 'ellipsis', marginTop: isNotebook ? '0' : '1px', cursor: 'pointer' }}
+                      >
+                        {task.text}
+                      </span>
                     )}
 
                     {editingTaskId !== (task._id || task.id) && (
@@ -333,27 +457,25 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
                           onSelect={(labelId) => updateTaskLabel(task._id || task.id, labelId)}
                           onManageLabels={() => setShowLabelManager(true)}
                         />
-                        {!isFuture && (
-                          <div style={{ position: 'relative' }}>
-                            <button
-                              className="more-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (openMenu?.id === (task._id || task.id)) {
-                                  setOpenMenu(null);
-                                } else {
-                                  setOpenMenu({ id: task._id || task.id, rect: e.currentTarget.getBoundingClientRect(), task });
-                                }
-                              }}
-                              style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 1, transition: 'color 0.2s', padding: '4px' }}
-                              onMouseEnter={e => e.currentTarget.style.color = isNotebook ? '#f8fafc' : '#e2e8f0'}
-                              onMouseLeave={e => e.currentTarget.style.color = '#fff'}
-                              title="More options"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-                          </div>
-                        )}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            className="more-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (openMenu?.id === (task._id || task.id)) {
+                                setOpenMenu(null);
+                              } else {
+                                setOpenMenu({ id: task._id || task.id, rect: e.currentTarget.getBoundingClientRect(), task });
+                              }
+                            }}
+                            style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: 1, transition: 'color 0.2s', padding: '4px' }}
+                            onMouseEnter={e => e.currentTarget.style.color = isNotebook ? '#f8fafc' : '#e2e8f0'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#fff'}
+                            title="More options"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -393,10 +515,12 @@ export default function DayModal({ date, labels, onUpdate, onClose, theme }) {
             <Pencil size={14} />
             Edit
           </button>
-          <button onClick={() => { toggleTask(openMenu.id, openMenu.task.is_completed); setOpenMenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#f8fafc', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', textAlign: 'left', width: '100%', whiteSpace: 'nowrap' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-            <Undo2 size={14} />
-            <span>Mark undone</span>
-          </button>
+          {openMenu.task.is_completed && (
+            <button onClick={() => { toggleTask(openMenu.id, openMenu.task.is_completed); setOpenMenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#f8fafc', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', textAlign: 'left', width: '100%', whiteSpace: 'nowrap' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <Undo2 size={14} />
+              <span>Mark undone</span>
+            </button>
+          )}
           <button onClick={() => { deleteTask(openMenu.id); setOpenMenu(null); }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#ef4444', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem', textAlign: 'left', width: '100%', whiteSpace: 'nowrap' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <Trash2 size={14} />
             <span>Delete</span>

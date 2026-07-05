@@ -147,6 +147,7 @@ h2 {
     display: flex !important;
     justify-content: space-between !important;
   }
+
   .analytics-header .left-spacer {
     display: none !important;
   }
@@ -343,6 +344,30 @@ h2 {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(45px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-45px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 @keyframes streak-pop {
   0% {
     transform: scale(1);
@@ -413,6 +438,7 @@ h2 {
 .recharts-wrapper *:focus {
   outline: none !important;
 }
+
 @media (min-width: 769px) {
   .day-modal-container {
     padding-right: 16px !important;
@@ -422,5 +448,116 @@ h2 {
 @media (max-width: 768px) {
   .day-modal-container {
     padding-right: 6px !important;
+  }
+}
+
+/* DayModal Edge Navigation Buttons */
+.day-nav-edge-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 105;
+  width: 44px;
+  height: 110px;
+  border-radius: 4px;
+  background: transparent !important;
+  backdrop-filter: none;
+  border: none !important;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: none;
+  overflow: visible !important;
+}
+
+.day-nav-edge-btn svg {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  transform: scale(1.3);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.day-nav-edge-btn:hover {
+  background: transparent !important;
+  color: #e2e8f0;
+  box-shadow: none;
+}
+
+.day-nav-edge-btn:hover svg {
+  transform: scale(1.5);
+}
+
+.day-nav-edge-btn:active {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.day-nav-edge-btn:active svg {
+  transform: scale(1.3);
+}
+
+.day-nav-edge-btn-left {
+  left: max(20px, calc(25vw - 150px));
+}
+
+.day-nav-edge-btn-right {
+  right: max(20px, calc(25vw - 150px));
+}
+
+/* For notebook theme which is narrower (520px max width) */
+.day-nav-edge-btn-left.notebook-edge {
+  left: max(20px, calc(25vw - 130px));
+}
+
+.day-nav-edge-btn-right.notebook-edge {
+  right: max(20px, calc(25vw - 130px));
+}
+
+/* For tablet/mobile screens where modal fills most of the screen */
+@media (max-width: 768px) {
+  .day-modal-container {
+    width: calc(100vw - 64px) !important;
+    max-width: calc(100vw - 64px) !important;
+  }
+
+  .day-nav-edge-btn {
+    width: 30px;
+    height: 96px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none;
+    color: #94a3b8;
+    overflow: visible !important;
+  }
+
+  .day-nav-edge-btn svg {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    transform: scale(1.3) !important;
+  }
+
+  .day-nav-edge-btn:active {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+  }
+
+  .day-nav-edge-btn-left,
+  .day-nav-edge-btn-left.notebook-edge {
+    left: 0 !important;
+    border-radius: 0 4px 4px 0 !important;
+  }
+
+  .day-nav-edge-btn-right,
+  .day-nav-edge-btn-right.notebook-edge {
+    right: 0 !important;
+    border-radius: 4px 0 0 4px !important;
   }
 }

@@ -104,6 +104,7 @@ function MainApp() {
             fetchLabels();
           }}
           onClose={() => setSelectedDate(null)} 
+          onNavigate={(newDate) => setSelectedDate(newDate)}
           theme={modalTheme}
         />
       )}
