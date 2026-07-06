@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Rectangle, Sector } from 'recharts';
-import { BarChart2, TrendingUp, Activity, ChevronDown, Filter, Check } from 'lucide-react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Rectangle, Sector, CartesianGrid } from 'recharts';
+import { BarChart2, TrendingUp, Activity, ChevronDown, Filter, Check, Frown } from 'lucide-react';
 import YearlyHeatmap from './YearlyHeatmap';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -70,17 +70,15 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   const currentMonthName = monthNames[currentDate.getMonth()];
   const today = new Date();
   const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
-  const weekTitle = isCurrentMonth ? 'Past 7 Days' : 'First 7 Days';
+  const weekTitle = 'Last 7 Days';
 
   const getFullRangeDates = () => {
     const dates = [];
     if (viewScope === 'week') {
-      let endDate;
-      if (isCurrentMonth) {
-        endDate = new Date(today);
-      } else {
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
+      if (!isCurrentMonth) {
+        return [];
       }
+      const endDate = new Date(today);
       for (let i = 6; i >= 0; i--) {
         const d = new Date(endDate);
         d.setDate(d.getDate() - i);
@@ -89,8 +87,8 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
     } else {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      for (let i = 1; i <= daysInMonth; i++) {
+      const maxDay = isCurrentMonth ? today.getDate() : new Date(year, month + 1, 0).getDate();
+      for (let i = 1; i <= maxDay; i++) {
         dates.push(new Date(year, month, i));
       }
     }
@@ -204,17 +202,14 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   });
 
   let displayLabelData = stats.labelData;
-  if ((viewScope === 'week' || isFilterActive) && stats.rawTasks) {
+  if (viewScope === 'week' && !isCurrentMonth) {
+    displayLabelData = [];
+  } else if ((viewScope === 'week' || isFilterActive) && stats.rawTasks) {
     const labelDataMap = {};
     let startStr = '', endStr = '';
 
     if (viewScope === 'week') {
-      let endDate;
-      if (isCurrentMonth) {
-        endDate = new Date(today);
-      } else {
-        endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 7);
-      }
+      const endDate = new Date(today);
       const startDate = new Date(endDate);
       startDate.setDate(endDate.getDate() - 6);
 
@@ -483,19 +478,21 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
               </div>
               <div id="analytics-tooltip-container" style={{ position: 'absolute', top: '56px', left: '50%', transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none' }}></div>
 
-              {chartData.length > 0 ? (
+              {chartData.length > 0 && chartData.some(d => d.Total > 0) ? (
                 <div style={{ flex: 1, minHeight: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     {chartType === 'bar' ? (
                       <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <CartesianGrid vertical={false} stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3 3" />
                         <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={7} tickLine={false} axisLine={false} interval={0} tickMargin={2} />
                         <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                         <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} content={<CustomTooltip />} />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="Tasks" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Tasks" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} maxBarSize={48} />
                       </BarChart>
                     ) : (
                       <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                        <CartesianGrid vertical={false} stroke="rgba(255, 255, 255, 0.08)" strokeDasharray="3 3" />
                         <XAxis dataKey="dateNum" stroke="var(--text-secondary)" fontSize={7} tickLine={false} axisLine={false} interval={0} tickMargin={2} />
                         <YAxis stroke="var(--text-secondary)" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                         <Tooltip cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} content={<CustomTooltip />} />
@@ -506,8 +503,15 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                  No data for this period.
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 20px', fontSize: '0.85rem' }}>
+                  {viewScope === 'week' && !isCurrentMonth ? (
+                    <>
+                      <span>Only available for current month</span>
+                      <Frown size={22} style={{ opacity: 0.6 }} />
+                    </>
+                  ) : (
+                    <span>No activity for this month.</span>
+                  )}
                 </div>
               )}
             </div>
@@ -562,8 +566,15 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                  No labeled tasks for this month.
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 20px', fontSize: '0.85rem' }}>
+                  {viewScope === 'week' && !isCurrentMonth ? (
+                    <>
+                      <span>Only available for current month</span>
+                      <Frown size={22} style={{ opacity: 0.6 }} />
+                    </>
+                  ) : (
+                    <span>No labeled tasks for this month.</span>
+                  )}
                 </div>
               )}
             </div>
