@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame, CalendarDays, ListTodo, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Star, Tags, Eye, Minimize2, BookOpen, LayoutTemplate, Palette, Square, CheckSquare, BarChart2, Flame, CalendarDays, ListTodo, X, CheckCircle2 } from 'lucide-react';
 import LabelManager from './LabelManager';
 import AnalyticsGrid from './AnalyticsGrid';
 import UpcomingEvents from './UpcomingEvents';
+import HabitsModule from './HabitsModule';
 import confetti from 'canvas-confetti';
 
 const API_BASE = 'http://localhost:3001/api';
 
-export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme, isModalOpen }) {
+export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels, refreshKey, onUpdate, modalTheme, setModalTheme, isModalOpen, viewMode = 'calendar', setViewMode }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [monthData, setMonthData] = useState({});
   const [showLabelManager, setShowLabelManager] = useState(false);
@@ -23,18 +24,6 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
   const pendingStreakRef = useRef(null);
   const isModalOpenRef = useRef(isModalOpen);
   const streakBadgeRef = useRef(null);
-  const [viewMode, setViewMode] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem('wudid_dashboard_view_mode');
-      return saved ? saved : 'calendar';
-    } catch (e) {
-      return 'calendar';
-    }
-  });
-
-  useEffect(() => {
-    sessionStorage.setItem('wudid_dashboard_view_mode', viewMode);
-  }, [viewMode]);
   const themeMenuRef = useRef(null);
 
   useEffect(() => {
@@ -173,184 +162,177 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
 
   return (
     <div className="glass glass-card animate-fade-in" style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
-        <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 1, minWidth: 0, fontSize: 'clamp(1.25rem, 5vw, 1.6rem)' }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
-          </span>
-          <div
-            ref={streakBadgeRef}
-            className={`streak-celebrate-wrap ${justActivated ? 'streak-celebrate' : ''}`}
-            style={{
-              fontSize: '0.85rem',
-              background: isActiveToday ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
-              color: isActiveToday ? '#f97316' : 'var(--text-secondary)',
-              border: isActiveToday ? '1px solid transparent' : '1px solid rgba(255,255,255,0.2)',
-              padding: '2px 8px',
-              borderRadius: '16px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              flexShrink: 0,
-              transition: 'all 0.3s ease'
-            }}
-          >
-            <Flame size={14} fill={isActiveToday ? "currentColor" : "none"} strokeWidth={2} style={{ transition: 'all 0.3s ease' }} /> {streak} <span className="mobile-hide">Streak</span>
-          </div>
-        </h2>
+      {viewMode !== 'habits' && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap', gap: '8px' }}>
+          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 1, minWidth: 0, fontSize: 'clamp(1.25rem, 5vw, 1.6rem)' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear().toString().slice(-2)}
+            </span>
+            <div
+              ref={streakBadgeRef}
+              className={`streak-celebrate-wrap ${justActivated ? 'streak-celebrate' : ''}`}
+              style={{
+                fontSize: '0.85rem',
+                background: isActiveToday ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                color: isActiveToday ? '#f97316' : 'var(--text-secondary)',
+                border: isActiveToday ? '1px solid transparent' : '1px solid rgba(255,255,255,0.2)',
+                padding: '2px 8px',
+                borderRadius: '16px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                flexShrink: 0,
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <Flame size={14} fill={isActiveToday ? "currentColor" : "none"} strokeWidth={2} style={{ transition: 'all 0.3s ease' }} /> {streak} <span className="mobile-hide">Streak</span>
+            </div>
+          </h2>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              onClick={() => setViewMode(v => v === 'calendar' ? 'analytics' : 'calendar')}
-              className="btn-icon"
-              title={viewMode === 'calendar' ? 'Analytics' : 'Calendar'}
-              style={{ color: viewMode === 'analytics' ? 'var(--accent-primary)' : undefined }}
-            >
-              {viewMode === 'calendar' ? <BarChart2 size={19} /> : <CalendarIcon size={19} />}
-            </button>
-            <button
-              onClick={() => setShowUpcomingEvents(true)}
-              className="btn-icon"
-              title="Upcoming Events"
-              style={{}}
-            >
-              <CalendarDays size={19} />
-            </button>
-            <button
-              onClick={() => setShowLabelManager(true)}
-              className="btn-icon"
-              title="Manage Labels"
-              style={{}}
-            >
-              <Tags size={19} />
-            </button>
-
-            <div style={{ position: 'relative' }} ref={themeMenuRef}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
               <button
-                onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                onClick={() => setViewMode(viewMode === 'analytics' ? 'calendar' : 'analytics')}
                 className="btn-icon"
-                title="Theme Settings"
-                style={{
-                  background: isThemeMenuOpen ? 'rgba(255,255,255,0.1)' : undefined,
-                  borderColor: isThemeMenuOpen ? 'rgba(255,255,255,0.2)' : undefined,
-                  color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit'
-                }}
+                title={viewMode === 'analytics' ? "Switch to Calendar View" : "Switch to Analytics View"}
               >
-                <Palette size={19} />
+                {viewMode === 'analytics' ? <CalendarIcon size={19} /> : <BarChart2 size={19} />}
+              </button>
+              <button
+                onClick={() => setShowUpcomingEvents(true)}
+                className="btn-icon"
+                title="Upcoming Events"
+                style={{}}
+              >
+                <CalendarDays size={19} />
+              </button>
+              <button
+                onClick={() => setShowLabelManager(true)}
+                className="btn-icon"
+                title="Manage Labels"
+                style={{}}
+              >
+                <Tags size={19} />
               </button>
 
-              {isThemeMenuOpen && (
-                <div className="theme-menu" style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: '8px',
-                  background: 'var(--bg-color)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  zIndex: 100,
-                  width: '260px',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-                }}>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, paddingBottom: '6px', borderBottom: '1px solid var(--glass-border)', marginBottom: '4px' }}>
-                    Select Theme
-                  </div>
+              <div style={{ position: 'relative' }} ref={themeMenuRef}>
+                <button
+                  onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+                  className="btn-icon"
+                  title="Theme Settings"
+                  style={{
+                    background: isThemeMenuOpen ? 'rgba(255,255,255,0.1)' : undefined,
+                    borderColor: isThemeMenuOpen ? 'rgba(255,255,255,0.2)' : undefined,
+                    color: isThemeMenuOpen ? 'var(--accent-primary)' : 'inherit'
+                  }}
+                >
+                  <Palette size={19} />
+                </button>
 
-                  <button
-                    onClick={() => changeTheme('default')}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px',
-                      background: modalTheme === 'default' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                      border: `1px solid ${modalTheme === 'default' ? 'rgba(59, 130, 246, 0.3)' : 'transparent'}`,
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => { if (modalTheme !== 'default') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                    onMouseLeave={e => { if (modalTheme !== 'default') e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <div style={{ width: '54px', height: '64px', borderRadius: '6px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', padding: '8px 6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <div style={{ width: '18px', height: '4px', borderRadius: '2px', background: '#e2e8f0' }} />
-                        <div style={{ width: '6px', height: '6px', borderRadius: '3px', background: 'var(--accent-primary)' }} />
+                {isThemeMenuOpen && (
+                  <div className="theme-menu" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '8px',
+                    background: 'var(--bg-color)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)',
+                    zIndex: 50,
+                    minWidth: '220px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <button
+                      onClick={() => changeTheme('default')}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px',
+                        background: modalTheme === 'default' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        border: `1px solid ${modalTheme === 'default' ? 'rgba(59, 130, 246, 0.3)' : 'transparent'}`,
+                        cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { if (modalTheme !== 'default') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                      onMouseLeave={e => { if (modalTheme !== 'default') e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div style={{ width: '54px', height: '64px', borderRadius: '6px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '12px', left: '8px', right: '8px', height: '10px', borderRadius: '3px', background: 'rgba(59, 130, 246, 0.2)' }} />
+                        <div style={{ position: 'absolute', top: '28px', left: '8px', width: '24px', height: '6px', borderRadius: '2px', background: 'rgba(255,255,255,0.15)' }} />
+                        <div style={{ position: 'absolute', top: '38px', left: '8px', width: '32px', height: '6px', borderRadius: '2px', background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', bottom: '8px', right: '8px', width: '12px', height: '12px', borderRadius: '3px', background: '#3b82f6' }} />
                       </div>
-                      <div style={{ flex: 1 }} />
-                      <div style={{ width: '100%', height: '5px', borderRadius: '2.5px', background: 'rgba(255,255,255,0.1)' }} />
-                      <div style={{ width: '70%', height: '5px', borderRadius: '2.5px', background: 'rgba(255,255,255,0.1)' }} />
-                      <div style={{ width: '90%', height: '5px', borderRadius: '2.5px', background: 'rgba(255,255,255,0.1)' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>Modern Glass</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>Default sleek design</div>
-                    </div>
-                  </button>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>Modern Dark</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>Sleek glassmorphism</div>
+                      </div>
+                    </button>
 
-                  <button
-                    onClick={() => changeTheme('notebook')}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px',
-                      background: modalTheme === 'notebook' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                      border: `1px solid ${modalTheme === 'notebook' ? 'rgba(59, 130, 246, 0.3)' : 'transparent'}`,
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={e => { if (modalTheme !== 'notebook') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                    onMouseLeave={e => { if (modalTheme !== 'notebook') e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <div style={{ width: '54px', height: '64px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', left: '12px', top: 0, bottom: 0, width: '1px', background: 'rgba(239, 68, 68, 0.6)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '24px', height: '1px', background: 'rgba(239, 68, 68, 0.6)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '32px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '40px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '48px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                      <div style={{ position: 'absolute', left: 0, right: 0, top: '56px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                    <button
+                      onClick={() => changeTheme('notebook')}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 8px', borderRadius: '8px',
+                        background: modalTheme === 'notebook' ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        border: `1px solid ${modalTheme === 'notebook' ? 'rgba(59, 130, 246, 0.3)' : 'transparent'}`,
+                        cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={e => { if (modalTheme !== 'notebook') e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                      onMouseLeave={e => { if (modalTheme !== 'notebook') e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div style={{ width: '54px', height: '64px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', left: '12px', top: 0, bottom: 0, width: '1px', background: 'rgba(239, 68, 68, 0.6)' }} />
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: '24px', height: '1px', background: 'rgba(239, 68, 68, 0.6)' }} />
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: '32px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: '40px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: '48px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                        <div style={{ position: 'absolute', left: 0, right: 0, top: '56px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
 
-                      <div style={{ position: 'absolute', left: '16px', top: '8px', width: '24px', height: '4px', background: '#f8fafc', borderRadius: '2px' }} />
-                      <div style={{ position: 'absolute', left: '16px', top: '15px', width: '5px', height: '5px', borderRadius: '50%', background: '#fca5a5' }} />
-                      <div style={{ position: 'absolute', left: '26px', top: '35px', width: '22px', height: '3px', background: '#94a3b8', borderRadius: '1.5px' }} />
-                      <div style={{ position: 'absolute', left: '26px', top: '43px', width: '18px', height: '3px', background: '#94a3b8', borderRadius: '1.5px' }} />
-                      <div style={{ position: 'absolute', left: '16px', top: '34px', width: '5px', height: '5px', border: '1px solid #94a3b8', borderRadius: '1px' }} />
-                      <div style={{ position: 'absolute', left: '16px', top: '42px', width: '5px', height: '5px', border: '1px solid #94a3b8', borderRadius: '1px' }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>Notebook</div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>Classic paper style</div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="mobile-hide" style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn-icon" onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} disabled={!canGoBack} style={{ opacity: canGoBack ? 1 : 0.3 }}>
-                <ChevronLeft size={20} />
-              </button>
-              <button className="btn-icon" onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} disabled={!canGoForward} style={{ opacity: canGoForward ? 1 : 0.3 }}>
-                <ChevronRight size={20} />
-              </button>
-            </div>
-            <div className="mobile-only" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
-              <button
-                onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-                disabled={!canGoBack}
-                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
-              >
-                <ChevronLeft size={19} />
-              </button>
-              <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '16px' }} />
-              <button
-                onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-                disabled={!canGoForward}
-                style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
-              >
-                <ChevronRight size={19} />
-              </button>
+                        <div style={{ position: 'absolute', left: '16px', top: '8px', width: '24px', height: '4px', background: '#f8fafc', borderRadius: '2px' }} />
+                        <div style={{ position: 'absolute', left: '16px', top: '15px', width: '5px', height: '5px', borderRadius: '50%', background: '#fca5a5' }} />
+                        <div style={{ position: 'absolute', left: '26px', top: '35px', width: '22px', height: '3px', background: '#94a3b8', borderRadius: '1.5px' }} />
+                        <div style={{ position: 'absolute', left: '26px', top: '43px', width: '18px', height: '3px', background: '#94a3b8', borderRadius: '1.5px' }} />
+                        <div style={{ position: 'absolute', left: '16px', top: '34px', width: '5px', height: '5px', border: '1px solid #94a3b8', borderRadius: '1px' }} />
+                        <div style={{ position: 'absolute', left: '16px', top: '42px', width: '5px', height: '5px', border: '1px solid #94a3b8', borderRadius: '1px' }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.9rem' }}>Notebook</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>Classic paper style</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="mobile-hide" style={{ display: 'flex', gap: '8px' }}>
+                <button className="btn-icon" onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} disabled={!canGoBack} style={{ opacity: canGoBack ? 1 : 0.3 }}>
+                  <ChevronLeft size={20} />
+                </button>
+                <button className="btn-icon" onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} disabled={!canGoForward} style={{ opacity: canGoForward ? 1 : 0.3 }}>
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+              <div className="mobile-only" style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center' }}>
+                <button
+                  onClick={() => canGoBack && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                  disabled={!canGoBack}
+                  style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoBack ? 'pointer' : 'not-allowed', opacity: canGoBack ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                >
+                  <ChevronLeft size={19} />
+                </button>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '16px' }} />
+                <button
+                  onClick={() => canGoForward && setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                  disabled={!canGoForward}
+                  style={{ background: 'transparent', border: 'none', padding: '6px 8px', color: 'var(--text-primary)', cursor: canGoForward ? 'pointer' : 'not-allowed', opacity: canGoForward ? 1 : 0.3, display: 'flex', alignItems: 'center' }}
+                >
+                  <ChevronRight size={19} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {viewMode === 'calendar' ? (
         <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: '12px' }}>
@@ -664,8 +646,10 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
             );
           })}
         </div>
-      ) : (
+      ) : viewMode === 'analytics' ? (
         <AnalyticsGrid currentDate={currentDate} labels={labels} refreshKey={refreshKey} />
+      ) : (
+        <HabitsModule refreshKey={refreshKey} />
       )}
 
       {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} onUpdate={onUpdate} />}

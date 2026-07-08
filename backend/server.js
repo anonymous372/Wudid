@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { google } = require('googleapis');
 const mongoose = require('./db');
-const { User, MagicLink, Label, Event, Task } = require('./models');
+const { User, MagicLink, Label, Event, Task, Habit, HabitLog } = require('./models');
 
 const app = express();
 const PORT = 3001;
@@ -43,12 +43,18 @@ const authenticateToken = (req, res, next) => {
 
 // ---------------- AUTH ROUTES ----------------
 app.post('/api/auth/request-link', async (req, res) => {
-  const { email } = req.body;
+  const { email, name } = req.body;
   if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email required' });
   try {
     let user = await User.findOne({ email });
     if (!user) {
-      user = await User.create({ email });
+      if (!name || !name.trim()) {
+        return res.json({ isNewUser: true, message: 'Welcome! Please enter your name to set up your account.' });
+      }
+      user = await User.create({ email, name: name.trim() });
+    } else if (!user.name && name && name.trim()) {
+      user.name = name.trim();
+      await user.save();
     }
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
@@ -120,7 +126,18 @@ app.get('/api/status', authenticateToken, async (req, res) => {
   try {
     const minTask = await Task.findOne({ user_id: req.user_id }).sort({ date: 1 }).select('date');
     let startDate = minTask?.date || new Date().toISOString().split('T')[0];
-    res.json({ startDate });
+    const user = await User.findById(req.user_id);
+    res.json({ startDate, user: { email: user?.email || '', name: user?.name || '' } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const user = await User.findByIdAndUpdate(req.user_id, { name: name?.trim() || '' }, { new: true });
+    res.json({ email: user.email, name: user.name || '' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -420,6 +437,204 @@ app.get('/api/events/upcoming', authenticateToken, async (req, res) => {
     }).sort({ date: 1 });
     
     res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- HABIT TRACKING ENDPOINTS ---
+
+// Get all habits, last 365 days of logs, and computed streak statistics
+app.get('/api/habits/data', authenticateToken, async (req, res) => {
+  try {
+    const habits = await Habit.find({ user_id: req.user_id, is_archived: false }).sort({ created_at: 1 });
+    
+    const oneYearAgo = new Date();
+    oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+    const startDateStr = `${oneYearAgo.getFullYear()}-${String(oneYearAgo.getMonth() + 1).padStart(2, '0')}-${String(oneYearAgo.getDate()).padStart(2, '0')}`;
+    
+    const logs = await HabitLog.find({
+      user_id: req.user_id,
+      date: { $gte: startDateStr }
+    }).sort({ date: 1 });
+
+    // Calculate streaks & stats for each habit
+    const stats = {};
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+    for (const habit of habits) {
+      const habitLogs = logs.filter(l => l.habit_id.toString() === habit._id.toString());
+      const logMap = {};
+      habitLogs.forEach(l => { logMap[l.date] = l; });
+
+      const isDayCompleted = (dateStr) => {
+        const log = logMap[dateStr];
+        if (!log) return false;
+        if (habit.type === 'boolean') return log.value_bool === true;
+        if (habit.type === 'numeric' && habit.target_type === 'daily_quota') {
+          return (log.value_num !== null && habit.target_value !== null && log.value_num >= habit.target_value);
+        }
+        if (habit.type === 'numeric' && habit.target_type === 'milestone') {
+          return log.value_num !== null && log.value_num > 0;
+        }
+        return false;
+      };
+
+      // Calculate current streak
+      let currentStreak = 0;
+      let checkDate = new Date(today);
+      let checkStr = todayStr;
+
+      // If today is not completed yet, start checking from yesterday for active streak
+      if (!isDayCompleted(todayStr)) {
+        if (isDayCompleted(yesterdayStr)) {
+          checkDate = new Date(yesterday);
+          checkStr = yesterdayStr;
+        } else {
+          checkDate = null; // 0 streak
+        }
+      }
+
+      if (checkDate) {
+        while (true) {
+          if (isDayCompleted(checkStr)) {
+            currentStreak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+            checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+          } else {
+            break;
+          }
+        }
+      }
+
+      // Calculate best streak over all available logs
+      let bestStreak = 0;
+      let tempStreak = 0;
+      const sortedDates = Object.keys(logMap).sort();
+      if (sortedDates.length > 0) {
+        let prevDate = null;
+        for (const dStr of sortedDates) {
+          if (isDayCompleted(dStr)) {
+            const currD = new Date(dStr);
+            if (prevDate) {
+              const diffDays = Math.round((currD - prevDate) / (1000 * 60 * 60 * 24));
+              if (diffDays === 1) {
+                tempStreak++;
+              } else {
+                tempStreak = 1;
+              }
+            } else {
+              tempStreak = 1;
+            }
+            if (tempStreak > bestStreak) bestStreak = tempStreak;
+            prevDate = currD;
+          } else {
+            tempStreak = 0;
+            prevDate = null;
+          }
+        }
+      }
+      if (currentStreak > bestStreak) bestStreak = currentStreak;
+
+      stats[habit._id.toString()] = {
+        currentStreak,
+        bestStreak,
+        totalLoggedDays: habitLogs.filter(l => isDayCompleted(l.date)).length
+      };
+    }
+
+    res.json({ habits, logs, stats });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create a new habit
+app.post('/api/habits', authenticateToken, async (req, res) => {
+  try {
+    const { name, type, unit, target_value, target_type, icon, color, frequency } = req.body;
+    if (!name || !type) return res.status(400).json({ error: 'Name and type are required' });
+
+    const newHabit = new Habit({
+      user_id: req.user_id,
+      name,
+      type,
+      unit: unit || '',
+      target_value: target_value !== undefined ? target_value : null,
+      target_type: target_type || null,
+      icon: icon || 'Activity',
+      color: color || '#3b82f6',
+      frequency: frequency || 'daily'
+    });
+
+    await newHabit.save();
+    res.status(201).json(newHabit);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update or archive habit
+app.put('/api/habits/:id', authenticateToken, async (req, res) => {
+  try {
+    const habit = await Habit.findOne({ _id: req.params.id, user_id: req.user_id });
+    if (!habit) return res.status(404).json({ error: 'Habit not found' });
+
+    const fields = ['name', 'type', 'unit', 'target_value', 'target_type', 'icon', 'color', 'frequency', 'is_archived'];
+    fields.forEach(f => {
+      if (req.body[f] !== undefined) habit[f] = req.body[f];
+    });
+
+    await habit.save();
+    res.json(habit);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete habit and its logs
+app.delete('/api/habits/:id', authenticateToken, async (req, res) => {
+  try {
+    const habit = await Habit.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
+    if (!habit) return res.status(404).json({ error: 'Habit not found' });
+
+    await HabitLog.deleteMany({ habit_id: req.params.id, user_id: req.user_id });
+    res.json({ success: true, message: 'Habit deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Log or update a daily value for a habit
+app.post('/api/habits/log', authenticateToken, async (req, res) => {
+  try {
+    const { habit_id, date, value_bool, value_num, notes } = req.body;
+    if (!habit_id || !date) return res.status(400).json({ error: 'habit_id and date required' });
+
+    let log = await HabitLog.findOne({ habit_id, user_id: req.user_id, date });
+    if (!log) {
+      log = new HabitLog({
+        habit_id,
+        user_id: req.user_id,
+        date,
+        value_bool: value_bool !== undefined ? value_bool : null,
+        value_num: value_num !== undefined ? value_num : null,
+        notes: notes || ''
+      });
+    } else {
+      if (value_bool !== undefined) log.value_bool = value_bool;
+      if (value_num !== undefined) log.value_num = value_num;
+      if (notes !== undefined) log.notes = notes;
+      log.updated_at = new Date();
+    }
+
+    await log.save();
+    res.json(log);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

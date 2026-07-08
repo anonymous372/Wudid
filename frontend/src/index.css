@@ -331,6 +331,85 @@ h2 {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Sleek Auto-Hiding Scrollbar */
+.sleek-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+.sleek-scrollbar:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+.sleek-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.sleek-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sleek-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  transition: background 0.3s ease;
+}
+.sleek-scrollbar:hover::-webkit-scrollbar-thumb,
+.sleek-scrollbar:focus-within::-webkit-scrollbar-thumb,
+.sleek-scrollbar:active::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Routine Calendar Table Responsive Layout */
+.routine-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+.routine-date-cell {
+  padding: 8px 12px;
+  border-radius: 12px 0 0 12px;
+}
+.routine-habit-cell {
+  padding: 5px 6px;
+  text-align: center;
+}
+.routine-habit-box {
+  width: 36px;
+  height: 34px;
+  margin: 0 auto;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.routine-habit-header-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+@media (max-width: 768px) {
+  .routine-date-cell {
+    padding: 6px 4px;
+  }
+  .routine-habit-cell {
+    padding: 3px 2px;
+  }
+  .routine-habit-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+  }
+  .routine-habit-header-box {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
@@ -560,4 +639,14 @@ h2 {
     right: 0 !important;
     border-radius: 4px 0 0 4px !important;
   }
+}
+
+/* Hide native browser spinner buttons for custom stepper inputs */
+input[type=number].no-spinner::-webkit-inner-spin-button,
+input[type=number].no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number].no-spinner {
+  -moz-appearance: textfield;
 }
