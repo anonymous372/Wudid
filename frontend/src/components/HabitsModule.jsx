@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash } from 'lucide-react';
+import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import confetti from 'canvas-confetti';
 import HabitModal from './HabitModal';
@@ -13,13 +13,20 @@ const ICONS = {
   Heart: <Heart size={20} />,
   Droplets: <Droplets size={20} />,
   Dumbbell: <Dumbbell size={20} />,
-  BookOpen: <BookOpen size={20} />,
+  Footprints: <Footprints size={20} />,
+  Bike: <Bike size={20} />,
+  Utensils: <Utensils size={20} />,
+  Apple: <Apple size={20} />,
   Moon: <Moon size={20} />,
+  BedDouble: <BedDouble size={20} />,
+  BookOpen: <BookOpen size={20} />,
   CheckCircle2: <CheckCircle2 size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
-  Coffee: <Coffee size={20} />
+  Coffee: <Coffee size={20} />,
+  Target: <Target size={20} />,
+  Timer: <Timer size={20} />
 };
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -180,10 +187,23 @@ function HabitChartTooltip({ active, payload, hId, unit, color, tableMonth }) {
 }
 
 function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
-  const [chartType, setChartType] = useState('line');
+  const hId = habit._id || habit.id;
+  const storageKey = `wudid_habit_chart_${habit.name ? habit.name.toLowerCase().replace(/\s+/g, '_') : hId}`;
+  const [chartType, setChartType] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) || 'line';
+    } catch {
+      return 'line';
+    }
+  });
   const [isChartMenuOpen, setIsChartMenuOpen] = useState(false);
 
-  const hId = habit._id || habit.id;
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, chartType);
+    } catch {}
+  }, [storageKey, chartType]);
+
   const monthPrefix = `${tableYear}-${String(tableMonth + 1).padStart(2, '0')}`;
   const chartData = [...logs]
     .filter(l => (l.habit_id?._id || l.habit_id || '').toString() === hId.toString() && l.value_num !== null && l.date && l.date.startsWith(monthPrefix))
@@ -347,7 +367,22 @@ export default function HabitsModule({ refreshKey }) {
 
   const [tableYear, setTableYear] = useState(today.getFullYear());
   const [tableMonth, setTableMonth] = useState(today.getMonth());
-  const [activeTab, setActiveTab] = useState('routine'); // 'routine' | 'analytics'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wudid_habits_active_tab') || sessionStorage.getItem('wudid_habits_active_tab');
+      return saved ? saved : 'routine';
+    } catch {
+      return 'routine';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wudid_habits_active_tab', activeTab);
+      sessionStorage.setItem('wudid_habits_active_tab', activeTab);
+    } catch {}
+  }, [activeTab]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
 

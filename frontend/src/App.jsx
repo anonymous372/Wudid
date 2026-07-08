@@ -46,7 +46,7 @@ function MainApp() {
 
   const [viewMode, setViewMode] = useState(() => {
     try {
-      const saved = sessionStorage.getItem('wudid_dashboard_view_mode');
+      const saved = localStorage.getItem('wudid_dashboard_view_mode') || sessionStorage.getItem('wudid_dashboard_view_mode');
       return saved ? saved : 'calendar';
     } catch (e) {
       return 'calendar';
@@ -56,7 +56,10 @@ function MainApp() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    sessionStorage.setItem('wudid_dashboard_view_mode', viewMode);
+    try {
+      localStorage.setItem('wudid_dashboard_view_mode', viewMode);
+      sessionStorage.setItem('wudid_dashboard_view_mode', viewMode);
+    } catch {}
   }, [viewMode]);
 
   useEffect(() => {
@@ -137,7 +140,13 @@ function MainApp() {
               Tasks
             </button>
             <button
-              onClick={() => setViewMode('habits')}
+              onClick={() => {
+                try {
+                  localStorage.setItem('wudid_habits_active_tab', 'routine');
+                  sessionStorage.setItem('wudid_habits_active_tab', 'routine');
+                } catch {}
+                setViewMode('habits');
+              }}
               style={{
                 padding: '8px 18px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600,
                 background: viewMode === 'habits' ? 'var(--accent-primary)' : 'transparent',

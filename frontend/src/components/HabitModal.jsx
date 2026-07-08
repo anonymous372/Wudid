@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee } from 'lucide-react';
+import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -10,13 +10,20 @@ const ICONS = {
   Heart: <Heart size={20} />,
   Droplets: <Droplets size={20} />,
   Dumbbell: <Dumbbell size={20} />,
-  BookOpen: <BookOpen size={20} />,
+  Footprints: <Footprints size={20} />,
+  Bike: <Bike size={20} />,
+  Utensils: <Utensils size={20} />,
+  Apple: <Apple size={20} />,
   Moon: <Moon size={20} />,
+  BedDouble: <BedDouble size={20} />,
+  BookOpen: <BookOpen size={20} />,
   CheckCircle2: <CheckCircle2 size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
-  Coffee: <Coffee size={20} />
+  Coffee: <Coffee size={20} />,
+  Target: <Target size={20} />,
+  Timer: <Timer size={20} />
 };
 
 const COLORS = [
