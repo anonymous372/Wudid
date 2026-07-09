@@ -55,16 +55,22 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   }, [selectedLabels]);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const filterMenuRef = useRef(null);
+  const chartMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target)) {
         setIsFilterMenuOpen(false);
       }
+      if (chartMenuRef.current && !chartMenuRef.current.contains(event.target)) {
+        setIsChartMenuOpen(false);
+      }
     };
-    if (isFilterMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    if (isFilterMenuOpen || isChartMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isFilterMenuOpen]);
+  }, [isFilterMenuOpen, isChartMenuOpen]);
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const currentMonthName = monthNames[currentDate.getMonth()];
@@ -436,7 +442,7 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Activity</h3>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
                 </div>
-                <div style={{ position: 'relative' }}>
+                <div ref={chartMenuRef} style={{ position: 'relative' }}>
                   <button
                     onClick={() => setIsChartMenuOpen(!isChartMenuOpen)}
                     style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s ease' }}

@@ -361,34 +361,51 @@ h2 {
 .routine-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 6px;
+  border-spacing: 0 2px;
 }
 .routine-date-cell {
-  padding: 8px 12px;
-  border-radius: 12px 0 0 12px;
+  padding: 3px 8px;
+  border-radius: 10px 0 0 10px;
 }
 .routine-habit-cell {
-  padding: 5px 6px;
+  padding: 2px 4px;
   text-align: center;
 }
 .routine-habit-box {
-  width: 36px;
-  height: 34px;
+  width: 34px;
+  height: 30px;
   margin: 0 auto;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
 }
 .routine-habit-header-box {
-  width: 38px;
   height: 38px;
+  padding: 0 12px;
   border-radius: 11px;
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   transition: all 0.2s;
+  max-width: 170px;
+}
+.routine-habit-header-box svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.routine-habit-header-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -404,9 +421,22 @@ h2 {
     border-radius: 7px;
   }
   .routine-habit-header-box {
-    width: 30px;
-    height: 30px;
+    height: auto;
+    min-height: 44px;
+    padding: 5px 6px;
     border-radius: 8px;
+    flex-direction: column;
+    gap: 3px;
+    max-width: 62px;
+  }
+  .routine-habit-header-box svg {
+    width: 18px;
+    height: 18px;
+  }
+  .routine-habit-header-name {
+    font-size: 0.65rem;
+    max-width: 52px;
+    line-height: 1.1;
   }
 }
 

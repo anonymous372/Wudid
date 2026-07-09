@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer } from 'lucide-react';
+import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, ChevronDown, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -9,15 +9,17 @@ const ICONS = {
   Flame: <Flame size={20} />,
   Heart: <Heart size={20} />,
   Droplets: <Droplets size={20} />,
+  ShowerHead: <ShowerHead size={20} />,
   Dumbbell: <Dumbbell size={20} />,
   Footprints: <Footprints size={20} />,
   Bike: <Bike size={20} />,
+  Gauge: <Gauge size={20} />,
   Utensils: <Utensils size={20} />,
   Apple: <Apple size={20} />,
   Moon: <Moon size={20} />,
   BedDouble: <BedDouble size={20} />,
+  Sparkles: <Sparkles size={20} />,
   BookOpen: <BookOpen size={20} />,
-  CheckCircle2: <CheckCircle2 size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
@@ -28,16 +30,164 @@ const ICONS = {
 
 const COLORS = [
   '#3b82f6', // Blue
-  '#10b981', // Green
-  '#f59e0b', // Amber
-  '#ef4444', // Red
-  '#8b5cf6', // Purple
+  '#6366f1', // Indigo
+  '#8b5cf6', // Violet
+  '#a855f7', // Purple
   '#ec4899', // Pink
+  '#f43f5e', // Rose
+  '#ef4444', // Red
+  '#f97316', // Orange
+  '#f59e0b', // Amber
+  '#eab308', // Yellow
+  '#84cc16', // Lime
+  '#10b981', // Emerald
+  '#14b8a6', // Teal
   '#06b6d4', // Cyan
-  '#f97316'  // Orange
+  '#0ea5e9', // Sky
+  '#64748b'  // Slate
 ];
 
-export default function HabitModal({ onClose, onSave, initialHabit = null }) {
+function CustomLabelDropdown({ value, onChange, labels, placeholder = "-- Not Linked --" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = React.useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+  const selectedLabel = labels.find(l => (l._id || l.id) === value);
+
+  const toggleOpen = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleOpen}
+        className="input-field"
+        style={{
+          width: '100%',
+          padding: '10px 14px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: selectedLabel ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0,0,0,0.3)',
+          border: selectedLabel ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255,255,255,0.12)',
+          color: selectedLabel ? '#60a5fa' : 'var(--text-primary)',
+          cursor: 'pointer',
+          fontSize: '0.88rem',
+          fontWeight: selectedLabel ? 600 : 400
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+          <Tag size={15} style={{ color: selectedLabel ? selectedLabel.color || '#60a5fa' : 'var(--text-secondary)', flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedLabel ? selectedLabel.name : placeholder}
+          </span>
+        </div>
+        <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+      </button>
+
+      {isOpen && createPortal(
+        <>
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              width: `${Math.max(coords.width, 200)}px`,
+              background: '#18181b',
+              border: '1px solid rgba(255,255,255,0.18)',
+              borderRadius: '14px',
+              padding: '6px',
+              boxShadow: '0 15px 40px rgba(0,0,0,0.8)',
+              zIndex: 99999,
+              maxHeight: '220px',
+              overflowY: 'auto'
+            }}
+            className="sleek-scrollbar"
+          >
+            <div
+              onClick={() => {
+                onChange('');
+                setIsOpen(false);
+              }}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.86rem',
+                color: !value ? '#ffffff' : '#ef4444',
+                background: !value ? 'rgba(255,255,255,0.08)' : 'transparent',
+                fontWeight: !value ? 600 : 500
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = !value ? 'rgba(255,255,255,0.08)' : 'transparent'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {value ? <Unlink size={15} style={{ color: '#ef4444' }} /> : <Link2 size={15} style={{ opacity: 0.5 }} />}
+                <span>{value ? 'Unlink Label' : placeholder}</span>
+              </div>
+              {!value && <Check size={14} color="#60a5fa" />}
+            </div>
+
+            {labels.map(l => {
+              const isSelected = (l._id || l.id) === value;
+              return (
+                <div
+                  key={l._id || l.id}
+                  onClick={() => {
+                    onChange(l._id || l.id);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.86rem',
+                    color: '#ffffff',
+                    background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                    fontWeight: isSelected ? 600 : 400
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255,255,255,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Tag size={15} style={{ color: l.color || '#60a5fa' }} />
+                    <span>{l.name}</span>
+                  </div>
+                  {isSelected && <Check size={14} color="#60a5fa" />}
+                </div>
+              );
+            })}
+          </div>
+        </>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+export default function HabitModal({ onClose, onSave, initialHabit = null, labels = [] }) {
   const [name, setName] = useState(initialHabit ? initialHabit.name : '');
   const [type, setType] = useState(initialHabit ? initialHabit.type : 'boolean');
   const [unit, setUnit] = useState(initialHabit ? initialHabit.unit : '');
@@ -46,8 +196,30 @@ export default function HabitModal({ onClose, onSave, initialHabit = null }) {
   const [icon, setIcon] = useState(initialHabit ? initialHabit.icon : 'Activity');
   const [color, setColor] = useState(initialHabit ? initialHabit.color : '#3b82f6');
   const [frequency, setFrequency] = useState(initialHabit ? initialHabit.frequency : 'daily');
+  const [linkedLabelId, setLinkedLabelId] = useState(() => {
+    if (!initialHabit || !initialHabit.linked_label_id) return '';
+    if (typeof initialHabit.linked_label_id === 'object') return initialHabit.linked_label_id._id || initialHabit.linked_label_id.id || '';
+    return initialHabit.linked_label_id || '';
+  });
+  const [availableLabels, setAvailableLabels] = useState(labels || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (labels && labels.length > 0) {
+      setAvailableLabels(labels);
+    } else {
+      const token = localStorage.getItem('wudid_token');
+      fetch(`${API_BASE}/labels`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setAvailableLabels(data);
+        })
+        .catch(() => {});
+    }
+  }, [labels]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,7 +244,8 @@ export default function HabitModal({ onClose, onSave, initialHabit = null }) {
       target_type: type === 'numeric' ? targetType : null,
       icon,
       color,
-      frequency
+      frequency,
+      linked_label_id: type === 'boolean' && linkedLabelId ? linkedLabelId : null
     };
 
     try {

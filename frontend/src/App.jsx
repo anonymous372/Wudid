@@ -128,7 +128,10 @@ function MainApp() {
           {/* Pill Switcher */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '14px', border: '1px solid var(--glass-border)', alignItems: 'center' }}>
             <button
-              onClick={() => setViewMode('calendar')}
+              onClick={() => {
+                setViewMode('calendar');
+                setRefreshKey(k => k + 1);
+              }}
               style={{
                 padding: '8px 18px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600,
                 background: (viewMode === 'calendar' || viewMode === 'analytics') ? 'var(--accent-primary)' : 'transparent',

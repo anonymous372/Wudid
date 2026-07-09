@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer } from 'lucide-react';
+import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import confetti from 'canvas-confetti';
 import HabitModal from './HabitModal';
@@ -12,15 +12,17 @@ const ICONS = {
   Flame: <Flame size={20} />,
   Heart: <Heart size={20} />,
   Droplets: <Droplets size={20} />,
+  ShowerHead: <ShowerHead size={20} />,
   Dumbbell: <Dumbbell size={20} />,
   Footprints: <Footprints size={20} />,
   Bike: <Bike size={20} />,
+  Gauge: <Gauge size={20} />,
   Utensils: <Utensils size={20} />,
   Apple: <Apple size={20} />,
   Moon: <Moon size={20} />,
   BedDouble: <BedDouble size={20} />,
+  Sparkles: <Sparkles size={20} />,
   BookOpen: <BookOpen size={20} />,
-  CheckCircle2: <CheckCircle2 size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
@@ -197,11 +199,26 @@ function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
     }
   });
   const [isChartMenuOpen, setIsChartMenuOpen] = useState(false);
+  const menuRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsChartMenuOpen(false);
+      }
+    };
+    if (isChartMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isChartMenuOpen]);
 
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, chartType);
-    } catch {}
+    } catch { }
   }, [storageKey, chartType]);
 
   const monthPrefix = `${tableYear}-${String(tableMonth + 1).padStart(2, '0')}`;
@@ -248,7 +265,7 @@ function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
         </div>
 
         {/* Chart Type Dropdown matching Tasks Dashboard */}
-        <div style={{ position: 'relative' }}>
+        <div ref={menuRef} style={{ position: 'relative' }}>
           <button
             onClick={() => setIsChartMenuOpen(!isChartMenuOpen)}
             style={{
@@ -344,8 +361,8 @@ function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
                   dataKey="value"
                   stroke={habit.color}
                   strokeWidth={3}
-                  dot={{ r: 3, fill: habit.color }}
-                  activeDot={{ r: 5 }}
+                  dot={{ r: 2, fill: habit.color }}
+                  activeDot={{ r: 4 }}
                 />
               </LineChart>
             )}
@@ -356,10 +373,151 @@ function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
   );
 }
 
-export default function HabitsModule({ refreshKey }) {
+function CustomLabelDropdown({ value, onChange, labels, placeholder = "-- Not Linked --" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = React.useRef(null);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+  const selectedLabel = labels.find(l => (l._id || l.id) === value);
+
+  const toggleOpen = () => {
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+    setIsOpen(!isOpen);
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleOpen}
+        className="input-field"
+        style={{
+          width: '100%',
+          padding: '10px 14px',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: selectedLabel ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0,0,0,0.3)',
+          border: selectedLabel ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(255,255,255,0.12)',
+          color: selectedLabel ? '#60a5fa' : 'var(--text-primary)',
+          cursor: 'pointer',
+          fontSize: '0.88rem',
+          fontWeight: selectedLabel ? 600 : 400
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+          <Tag size={15} style={{ color: selectedLabel ? selectedLabel.color || '#60a5fa' : 'var(--text-secondary)', flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {selectedLabel ? selectedLabel.name : placeholder}
+          </span>
+        </div>
+        <ChevronDown size={16} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
+      </button>
+
+      {isOpen && createPortal(
+        <>
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }}
+            onClick={() => setIsOpen(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              width: `${Math.max(coords.width, 200)}px`,
+              background: '#18181b',
+              border: '1px solid rgba(255,255,255,0.18)',
+              borderRadius: '14px',
+              padding: '6px',
+              boxShadow: '0 15px 40px rgba(0,0,0,0.8)',
+              zIndex: 99999,
+              maxHeight: '220px',
+              overflowY: 'auto'
+            }}
+            className="sleek-scrollbar"
+          >
+            <div
+              onClick={() => {
+                onChange('');
+                setIsOpen(false);
+              }}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.86rem',
+                color: !value ? '#ffffff' : '#ef4444',
+                background: !value ? 'rgba(255,255,255,0.08)' : 'transparent',
+                fontWeight: !value ? 600 : 500
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = !value ? 'rgba(255,255,255,0.08)' : 'transparent'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {value ? <Unlink size={15} style={{ color: '#ef4444' }} /> : <Link2 size={15} style={{ opacity: 0.5 }} />}
+                <span>{value ? 'Unlink Label' : placeholder}</span>
+              </div>
+              {!value && <Check size={14} color="#60a5fa" />}
+            </div>
+
+            {labels.map(l => {
+              const isSelected = (l._id || l.id) === value;
+              return (
+                <div
+                  key={l._id || l.id}
+                  onClick={() => {
+                    onChange(l._id || l.id);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.86rem',
+                    color: '#ffffff',
+                    background: isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                    fontWeight: isSelected ? 600 : 400
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255,255,255,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background = isSelected ? 'rgba(59, 130, 246, 0.2)' : 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Tag size={15} style={{ color: l.color || '#60a5fa' }} />
+                    <span>{l.name}</span>
+                  </div>
+                  {isSelected && <Check size={14} color="#60a5fa" />}
+                </div>
+              );
+            })}
+          </div>
+        </>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+export default function HabitsModule({ refreshKey, labels: propLabels = [], onUpdate }) {
   const [habits, setHabits] = useState([]);
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({});
+  const [labelsList, setLabelsList] = useState(propLabels || []);
   const [isLoading, setIsLoading] = useState(true);
 
   const today = new Date();
@@ -380,28 +538,41 @@ export default function HabitsModule({ refreshKey }) {
     try {
       localStorage.setItem('wudid_habits_active_tab', activeTab);
       sessionStorage.setItem('wudid_habits_active_tab', activeTab);
-    } catch {}
+    } catch { }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (propLabels && propLabels.length > 0) setLabelsList(propLabels);
+  }, [propLabels]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
 
   /* Requirement 1 & 3 Modals */
   const [showManageModal, setShowManageModal] = useState(false);
+  const [showLinkageModal, setShowLinkageModal] = useState(false);
   const [selectedDayModalDate, setSelectedDayModalDate] = useState(null);
   const [hoveredHabitHeader, setHoveredHabitHeader] = useState(null);
+  const hoverTimeoutRef = React.useRef(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     const token = localStorage.getItem('wudid_token');
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
     try {
-      const res = await fetch(`${API_BASE}/habits/data`, { headers });
+      const [res, lblRes] = await Promise.all([
+        fetch(`${API_BASE}/habits/data`, { headers }),
+        fetch(`${API_BASE}/labels`, { headers })
+      ]);
       if (res.ok) {
         const data = await res.json();
         setHabits(data.habits || []);
         setLogs(data.logs || []);
         setStats(data.stats || {});
+      }
+      if (lblRes.ok) {
+        const lblData = await lblRes.json();
+        if (Array.isArray(lblData)) setLabelsList(lblData);
       }
     } catch (err) {
       console.error('Failed to load habits:', err);
@@ -452,6 +623,7 @@ export default function HabitsModule({ refreshKey }) {
       });
       if (res.ok) {
         fetchData();
+        if (onUpdate) onUpdate();
       }
     } catch (err) {
       console.error('Failed to log habit:', err);
@@ -502,7 +674,10 @@ export default function HabitsModule({ refreshKey }) {
     if (!logs || logs.length === 0) return false;
     let earliestDate = null;
     for (const l of logs) {
-      if (!earliestDate || l.date < earliestDate) earliestDate = l.date;
+      const isCompletedOrLogged = l.value_bool === true || (typeof l.value_num === 'number' && l.value_num > 0);
+      if (isCompletedOrLogged) {
+        if (!earliestDate || l.date < earliestDate) earliestDate = l.date;
+      }
     }
     if (!earliestDate) return false;
     const earliestY = parseInt(earliestDate.slice(0, 4), 10);
@@ -587,6 +762,16 @@ export default function HabitsModule({ refreshKey }) {
             <Settings size={19} />
           </button>
 
+          {/* Link Habits to Task Labels Button */}
+          <button
+            onClick={() => setShowLinkageModal(true)}
+            className="btn-icon"
+            title="Link Habits to Task Labels (Auto-Sync)"
+            style={{ position: 'relative' }}
+          >
+            <Link2 size={19} />
+          </button>
+
           {/* Month Navigation - Desktop: Two circular individual buttons */}
           <div className="mobile-hide" style={{ display: 'flex', gap: '8px' }}>
             <button
@@ -660,8 +845,8 @@ export default function HabitsModule({ refreshKey }) {
           <table className="routine-table">
             <thead>
               <tr>
-                <th className="routine-date-cell" style={{ textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.82rem', fontWeight: 600, borderBottom: '1px solid var(--glass-border)', whiteSpace: 'nowrap' }}>
-                  Date
+                <th className="routine-date-cell" style={{ textAlign: 'center', borderBottom: '1px solid var(--glass-border)', whiteSpace: 'nowrap', verticalAlign: 'middle', padding: '4px 8px' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Date</span>
                 </th>
                 {habits.map(habit => (
                   <th
@@ -672,22 +857,34 @@ export default function HabitsModule({ refreshKey }) {
                     <div
                       onMouseEnter={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setHoveredHabitHeader({
-                          id: habit._id || habit.id,
-                          text: `${habit.name} ${habit.unit ? `(${habit.unit})` : ''}`,
-                          top: rect.top - 44,
-                          left: rect.left + rect.width / 2
-                        });
+                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        hoverTimeoutRef.current = setTimeout(() => {
+                          setHoveredHabitHeader({
+                            id: habit._id || habit.id,
+                            text: `${habit.name} ${habit.unit ? `(${habit.unit})` : ''}`.trim(),
+                            top: rect.top - 44,
+                            left: rect.left + rect.width / 2
+                          });
+                        }, 350);
                       }}
-                      onMouseLeave={() => setHoveredHabitHeader(null)}
+                      onMouseLeave={() => {
+                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        setHoveredHabitHeader(null);
+                      }}
                       className="routine-habit-header-box"
                       style={{
                         background: `${habit.color}20`, color: habit.color,
                         border: '1px solid rgba(255,255,255,0.08)',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        position: 'relative'
                       }}
                     >
-                      {ICONS[habit.icon] || <Activity size={16} />}
+                      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        {ICONS[habit.icon] || <Activity size={20} />}
+                      </div>
+                      <span className="routine-habit-header-name" title={habit.name}>
+                        {habit.name}
+                      </span>
                     </div>
                   </th>
                 ))}
@@ -704,13 +901,24 @@ export default function HabitsModule({ refreshKey }) {
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    {/* Vertical Left Edge Date Cell */}
-                    <td className="routine-date-cell" style={{ whiteSpace: 'nowrap' }}>
+                    {/* Horizontal Date Cell: Date + Day in one compact row */}
+                    <td className="routine-date-cell" style={{ whiteSpace: 'nowrap', padding: '3px 8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontWeight: day.isToday ? 700 : 600, color: day.isToday ? 'var(--accent-primary)' : 'var(--text-primary)', fontSize: '0.9rem' }}>
+                        <span style={{
+                          fontWeight: 700,
+                          color: day.isToday ? 'var(--accent-primary)' : 'var(--text-primary)',
+                          fontSize: '0.94rem'
+                        }}>
                           {day.monthName} {day.dayNum}
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: day.isToday ? 'var(--accent-primary)' : 'var(--text-secondary)', background: day.isToday ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255,255,255,0.04)', padding: '2px 5px', borderRadius: '5px', fontWeight: 600 }}>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          color: day.isToday ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                          background: day.isToday ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                          padding: '1.5px 6px',
+                          borderRadius: '5px',
+                          fontWeight: 600
+                        }}>
                           {day.weekday}
                         </span>
                       </div>
@@ -1054,12 +1262,115 @@ export default function HabitsModule({ refreshKey }) {
         document.body
       )}
 
+      {/* Habit to Task Label Linkage Manager Modal */}
+      {showLinkageModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowLinkageModal(false)} style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: '20px'
+        }}>
+          <div className="glass glass-card" onClick={e => e.stopPropagation()} style={{
+            width: '100%', maxWidth: '540px', padding: '28px', borderRadius: '24px',
+            display: 'flex', flexDirection: 'column', gap: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+            background: 'var(--bg-color)', maxHeight: '85vh', overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa' }}>
+                  <Link2 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Link Habits & Tasks
+                  </h3>
+                </div>
+              </div>
+              <button onClick={() => setShowLinkageModal(false)} className="btn-icon" style={{ padding: '6px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="sleek-scrollbar" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
+              {habits.filter(h => h.type === 'boolean').length === 0 ? (
+                <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  No habits available yet to link with Task Labels.
+                </div>
+              ) : (
+                habits.filter(h => h.type === 'boolean').map(habit => (
+                  <div key={habit._id || habit.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 16px', borderRadius: '16px', background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--glass-border)', flexWrap: 'wrap', gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '38px', height: '38px', borderRadius: '10px',
+                        background: `${habit.color}25`, color: habit.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {ICONS[habit.icon] || <Activity size={18} />}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+                          {habit.name}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '180px' }}>
+                      <CustomLabelDropdown
+                        value={habit.linked_label_id || ''}
+                        onChange={async (newLabelId) => {
+                          const token = localStorage.getItem('wudid_token');
+                          const headers = {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                          };
+                          try {
+                            await fetch(`${API_BASE}/habits/${habit._id || habit.id}`, {
+                              method: 'PUT',
+                              headers,
+                              body: JSON.stringify({ linked_label_id: newLabelId || null })
+                            });
+                            fetchData();
+                            if (onUpdate) onUpdate();
+                          } catch (err) {
+                            console.error('Failed to update link:', err);
+                          }
+                        }}
+                        labels={labelsList}
+                        placeholder="-- Not Linked --"
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowLinkageModal(false)}
+                className="btn-primary"
+                style={{ padding: '10px 24px', borderRadius: '12px', fontWeight: 600 }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Habit Modal (Create / Edit) */}
       {isModalOpen && (
         <HabitModal
           onClose={() => setIsModalOpen(false)}
           onSave={fetchData}
           initialHabit={editingHabit}
+          labels={labelsList}
         />
       )}
     </div>

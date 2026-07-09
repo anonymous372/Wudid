@@ -85,7 +85,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
         }
       })
       .catch(console.error);
-  }, [currentDate, refreshKey]);
+  }, [currentDate, refreshKey, viewMode]);
 
   const triggerConfetti = () => {
     let x = 0.15;
@@ -649,7 +649,7 @@ export default function Dashboard({ startDate, onSelectDay, labels, fetchLabels,
       ) : viewMode === 'analytics' ? (
         <AnalyticsGrid currentDate={currentDate} labels={labels} refreshKey={refreshKey} />
       ) : (
-        <HabitsModule refreshKey={refreshKey} />
+        <HabitsModule refreshKey={refreshKey} labels={labels} onUpdate={onUpdate} />
       )}
 
       {showLabelManager && <LabelManager labels={labels} fetchLabels={fetchLabels} onClose={() => setShowLabelManager(false)} onUpdate={onUpdate} />}

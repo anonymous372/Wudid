@@ -60,6 +60,7 @@ const habitSchema = new mongoose.Schema({
   icon: { type: String, default: 'Activity' },
   color: { type: String, default: '#3b82f6' },
   frequency: { type: String, default: 'daily' },
+  linked_label_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Label', default: null },
   is_archived: { type: Boolean, default: false },
   created_at: { type: Date, default: Date.now }
 });

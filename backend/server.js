@@ -219,12 +219,50 @@ app.post('/api/tasks', authenticateToken, async (req, res) => {
 app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
   const { text, is_completed, label_id } = req.body;
   try {
+    const existingTask = await Task.findOne({ _id: req.params.id, user_id: req.user_id });
+    if (!existingTask) return res.status(404).json({ error: 'Task not found' });
+
     const updateData = {};
     if (text !== undefined) updateData.text = text;
     if (is_completed !== undefined) updateData.is_completed = !!is_completed;
     if (label_id !== undefined) updateData.label_id = label_id || null;
     
     await Task.findOneAndUpdate({ _id: req.params.id, user_id: req.user_id }, { $set: updateData });
+
+    // ONE-DIRECTIONAL LINKAGE: Toggling completion of a task with a linked label syncs habit completion
+    const targetLabelId = label_id !== undefined ? (label_id || null) : existingTask.label_id;
+    if (is_completed !== undefined && targetLabelId) {
+      try {
+        const linkedHabit = await Habit.findOne({ user_id: req.user_id, linked_label_id: targetLabelId, type: 'boolean', is_archived: false });
+        if (linkedHabit) {
+          if (!!is_completed) {
+            await HabitLog.findOneAndUpdate(
+              { habit_id: linkedHabit._id, user_id: req.user_id, date: existingTask.date },
+              { $set: { value_bool: true, updated_at: new Date() } },
+              { upsert: true, new: true }
+            );
+          } else {
+            const otherCompleted = await Task.countDocuments({
+              user_id: req.user_id,
+              date: existingTask.date,
+              label_id: targetLabelId,
+              is_completed: true,
+              _id: { $ne: existingTask._id }
+            });
+            if (otherCompleted === 0) {
+              await HabitLog.findOneAndUpdate(
+                { habit_id: linkedHabit._id, user_id: req.user_id, date: existingTask.date },
+                { $set: { value_bool: false, updated_at: new Date() } },
+                { upsert: true, new: true }
+              );
+            }
+          }
+        }
+      } catch (sideErr) {
+        console.error('Task toggle to Habit sync error:', sideErr);
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -233,7 +271,29 @@ app.put('/api/tasks/:id', authenticateToken, async (req, res) => {
 
 app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
-    await Task.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
+    const taskObj = await Task.findOneAndDelete({ _id: req.params.id, user_id: req.user_id });
+    if (taskObj && taskObj.label_id) {
+      try {
+        const linkedHabit = await Habit.findOne({ user_id: req.user_id, linked_label_id: taskObj.label_id, type: 'boolean', is_archived: false });
+        if (linkedHabit) {
+          const remainingCompletedTasks = await Task.countDocuments({
+            user_id: req.user_id,
+            date: taskObj.date,
+            label_id: taskObj.label_id,
+            is_completed: true
+          });
+          if (remainingCompletedTasks === 0) {
+            await HabitLog.findOneAndUpdate(
+              { habit_id: linkedHabit._id, user_id: req.user_id, date: taskObj.date },
+              { $set: { value_bool: false, updated_at: new Date() } },
+              { upsert: true }
+            );
+          }
+        }
+      } catch (sideErr) {
+        console.error('Task deletion to Habit sync error:', sideErr);
+      }
+    }
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -447,7 +507,7 @@ app.get('/api/events/upcoming', authenticateToken, async (req, res) => {
 // Get all habits, last 365 days of logs, and computed streak statistics
 app.get('/api/habits/data', authenticateToken, async (req, res) => {
   try {
-    const habits = await Habit.find({ user_id: req.user_id, is_archived: false }).sort({ created_at: 1 });
+    const rawHabits = await Habit.find({ user_id: req.user_id, is_archived: false }).populate('linked_label_id').sort({ created_at: 1 });
     
     const oneYearAgo = new Date();
     oneYearAgo.setDate(oneYearAgo.getDate() - 365);
@@ -458,7 +518,6 @@ app.get('/api/habits/data', authenticateToken, async (req, res) => {
       date: { $gte: startDateStr }
     }).sort({ date: 1 });
 
-    // Calculate streaks & stats for each habit
     const stats = {};
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -467,76 +526,61 @@ app.get('/api/habits/data', authenticateToken, async (req, res) => {
     yesterday.setDate(today.getDate() - 1);
     const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
-    for (const habit of habits) {
-      const habitLogs = logs.filter(l => l.habit_id.toString() === habit._id.toString());
-      const logMap = {};
-      habitLogs.forEach(l => { logMap[l.date] = l; });
-
-      const isDayCompleted = (dateStr) => {
-        const log = logMap[dateStr];
-        if (!log) return false;
-        if (habit.type === 'boolean') return log.value_bool === true;
-        if (habit.type === 'numeric' && habit.target_type === 'daily_quota') {
-          return (log.value_num !== null && habit.target_value !== null && log.value_num >= habit.target_value);
-        }
-        if (habit.type === 'numeric' && habit.target_type === 'milestone') {
-          return log.value_num !== null && log.value_num > 0;
+    const habits = rawHabits.map(habit => {
+      const hLogs = logs.filter(l => l.habit_id.toString() === habit._id.toString());
+      const isDayCompleted = (dStr) => {
+        const l = hLogs.find(x => x.date === dStr);
+        if (!l) return false;
+        if (habit.type === 'boolean') return l.value_bool === true;
+        if (habit.type === 'numeric') {
+          if (habit.target_value === null || habit.target_value === undefined) return l.value_num !== null;
+          return l.value_num >= habit.target_value;
         }
         return false;
       };
 
-      // Calculate current streak
       let currentStreak = 0;
       let checkDate = new Date(today);
-      let checkStr = todayStr;
-
-      // If today is not completed yet, start checking from yesterday for active streak
       if (!isDayCompleted(todayStr)) {
         if (isDayCompleted(yesterdayStr)) {
           checkDate = new Date(yesterday);
-          checkStr = yesterdayStr;
         } else {
-          checkDate = null; // 0 streak
+          checkDate = null;
         }
       }
-
       if (checkDate) {
         while (true) {
-          if (isDayCompleted(checkStr)) {
+          const dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+          if (isDayCompleted(dStr)) {
             currentStreak++;
             checkDate.setDate(checkDate.getDate() - 1);
-            checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
           } else {
             break;
           }
         }
       }
 
-      // Calculate best streak over all available logs
       let bestStreak = 0;
       let tempStreak = 0;
-      const sortedDates = Object.keys(logMap).sort();
-      if (sortedDates.length > 0) {
-        let prevDate = null;
-        for (const dStr of sortedDates) {
-          if (isDayCompleted(dStr)) {
-            const currD = new Date(dStr);
-            if (prevDate) {
-              const diffDays = Math.round((currD - prevDate) / (1000 * 60 * 60 * 24));
-              if (diffDays === 1) {
-                tempStreak++;
-              } else {
-                tempStreak = 1;
-              }
-            } else {
+      let prevDate = null;
+      for (const lg of hLogs) {
+        if (isDayCompleted(lg.date)) {
+          const currD = new Date(lg.date);
+          if (prevDate) {
+            const diffDays = Math.round((currD - prevDate) / (1000 * 60 * 60 * 24));
+            if (diffDays === 1) {
+              tempStreak++;
+            } else if (diffDays > 1) {
               tempStreak = 1;
             }
-            if (tempStreak > bestStreak) bestStreak = tempStreak;
-            prevDate = currD;
           } else {
-            tempStreak = 0;
-            prevDate = null;
+            tempStreak = 1;
           }
+          if (tempStreak > bestStreak) bestStreak = tempStreak;
+          prevDate = currD;
+        } else {
+          tempStreak = 0;
+          prevDate = null;
         }
       }
       if (currentStreak > bestStreak) bestStreak = currentStreak;
@@ -544,9 +588,19 @@ app.get('/api/habits/data', authenticateToken, async (req, res) => {
       stats[habit._id.toString()] = {
         currentStreak,
         bestStreak,
-        totalLoggedDays: habitLogs.filter(l => isDayCompleted(l.date)).length
+        totalLoggedDays: hLogs.filter(l => isDayCompleted(l.date)).length
       };
-    }
+
+      const json = habit.toJSON();
+      if (habit.linked_label_id) {
+        json.linked_label_name = habit.linked_label_id.name;
+        json.linked_label_color = habit.linked_label_id.color;
+        json.linked_label_id = habit.linked_label_id._id.toString();
+      } else {
+        json.linked_label_id = null;
+      }
+      return json;
+    });
 
     res.json({ habits, logs, stats });
   } catch (err) {
@@ -557,7 +611,7 @@ app.get('/api/habits/data', authenticateToken, async (req, res) => {
 // Create a new habit
 app.post('/api/habits', authenticateToken, async (req, res) => {
   try {
-    const { name, type, unit, target_value, target_type, icon, color, frequency } = req.body;
+    const { name, type, unit, target_value, target_type, icon, color, frequency, linked_label_id } = req.body;
     if (!name || !type) return res.status(400).json({ error: 'Name and type are required' });
 
     const newHabit = new Habit({
@@ -569,7 +623,8 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
       target_type: target_type || null,
       icon: icon || 'Activity',
       color: color || '#3b82f6',
-      frequency: frequency || 'daily'
+      frequency: frequency || 'daily',
+      linked_label_id: linked_label_id || null
     });
 
     await newHabit.save();
@@ -585,9 +640,9 @@ app.put('/api/habits/:id', authenticateToken, async (req, res) => {
     const habit = await Habit.findOne({ _id: req.params.id, user_id: req.user_id });
     if (!habit) return res.status(404).json({ error: 'Habit not found' });
 
-    const fields = ['name', 'type', 'unit', 'target_value', 'target_type', 'icon', 'color', 'frequency', 'is_archived'];
+    const fields = ['name', 'type', 'unit', 'target_value', 'target_type', 'icon', 'color', 'frequency', 'linked_label_id', 'is_archived'];
     fields.forEach(f => {
-      if (req.body[f] !== undefined) habit[f] = req.body[f];
+      if (req.body[f] !== undefined) habit[f] = req.body[f] || null;
     });
 
     await habit.save();
@@ -634,6 +689,7 @@ app.post('/api/habits/log', authenticateToken, async (req, res) => {
     }
 
     await log.save();
+
     res.json(log);
   } catch (err) {
     res.status(500).json({ error: err.message });
