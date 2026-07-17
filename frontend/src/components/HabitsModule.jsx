@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush } from 'lucide-react';
+import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import confetti from 'canvas-confetti';
 import HabitModal from './HabitModal';
@@ -668,6 +668,98 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
     }
   };
 
+  const handleReorderHabit = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= habits.length) return;
+
+    const newHabits = [...habits];
+    const [movedHabit] = newHabits.splice(index, 1);
+    newHabits.splice(targetIndex, 0, movedHabit);
+
+    setHabits(newHabits);
+
+    const orders = newHabits.map((h, idx) => ({ id: h._id || h.id, order: idx }));
+    const token = localStorage.getItem('wudid_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    try {
+      await fetch(`${API_BASE}/habits/reorder`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ orders })
+      });
+    } catch (err) {
+      console.error('Failed to reorder habits:', err);
+      fetchData();
+    }
+  };
+
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const activeDragIndexRef = useRef(null);
+  const habitsRef = useRef(habits);
+  useEffect(() => {
+    habitsRef.current = habits;
+  }, [habits]);
+
+  const saveReorderToBackend = async (updatedHabits) => {
+    const orders = updatedHabits.map((h, idx) => ({ id: h._id || h.id, order: idx }));
+    const token = localStorage.getItem('wudid_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    try {
+      await fetch(`${API_BASE}/habits/reorder`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ orders })
+      });
+    } catch (err) {
+      console.error('Failed to reorder habits:', err);
+      fetchData();
+    }
+  };
+
+  const handleLiveSwap = (targetIndex) => {
+    if (activeDragIndexRef.current === null || targetIndex === null || isNaN(targetIndex)) return;
+    const fromIndex = activeDragIndexRef.current;
+    if (fromIndex === targetIndex || targetIndex < 0 || targetIndex >= habitsRef.current.length) return;
+
+    const newHabits = [...habitsRef.current];
+    const [movedHabit] = newHabits.splice(fromIndex, 1);
+    newHabits.splice(targetIndex, 0, movedHabit);
+
+    activeDragIndexRef.current = targetIndex;
+    setDraggingIndex(targetIndex);
+    setHabits(newHabits);
+  };
+
+  const handleToggleVisibility = async (habit) => {
+    const hId = habit._id || habit.id;
+    const newHiddenState = !habit.is_hidden;
+
+    // Optimistic update
+    setHabits(habits.map(h => (h._id || h.id) === hId ? { ...h, is_hidden: newHiddenState } : h));
+
+    const token = localStorage.getItem('wudid_token');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    try {
+      await fetch(`${API_BASE}/habits/${hId}/visibility`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ is_hidden: newHiddenState })
+      });
+    } catch (err) {
+      console.error('Failed to toggle visibility:', err);
+      fetchData();
+    }
+  };
+
   const canGoForward = tableYear < today.getFullYear() || (tableYear === today.getFullYear() && tableMonth < today.getMonth());
 
   const canGoBack = (() => {
@@ -723,6 +815,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
   };
 
   const monthDays = getMonthDays(tableYear, tableMonth);
+  const visibleHabits = habits.filter(h => !h.is_hidden);
   const monthNames = MONTH_NAMES;
 
   const formatModalDateHeader = (dateStr) => {
@@ -753,11 +846,11 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             {activeTab === 'analytics' ? <CalendarIcon size={19} /> : <BarChart2 size={19} />}
           </button>
 
-          {/* Manage Habits Button */}
+          {/* Manage & Reorder Habits Button */}
           <button
             onClick={() => setShowManageModal(true)}
             className="btn-icon"
-            title="Manage Habits"
+            title="Manage & Reorder Habits"
           >
             <Settings size={19} />
           </button>
@@ -841,114 +934,136 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
         </div>
       ) : activeTab === 'routine' ? (
         /* TABULAR VERTICAL CALENDAR TABLE matching Tasks Module */
-        <div className="sleek-scrollbar" style={{ overflowX: 'auto', paddingBottom: '6px' }}>
-          <table className="routine-table">
-            <thead>
-              <tr>
-                <th className="routine-date-cell" style={{ textAlign: 'center', borderBottom: '1px solid var(--glass-border)', whiteSpace: 'nowrap', verticalAlign: 'middle', padding: '4px 8px' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Date</span>
-                </th>
-                {habits.map(habit => (
-                  <th
-                    key={habit._id || habit.id}
-                    className="routine-habit-cell"
-                    style={{ borderBottom: '1px solid var(--glass-border)', position: 'relative' }}
-                  >
-                    <div
-                      onMouseEnter={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-                        hoverTimeoutRef.current = setTimeout(() => {
-                          setHoveredHabitHeader({
-                            id: habit._id || habit.id,
-                            text: `${habit.name} ${habit.unit ? `(${habit.unit})` : ''}`.trim(),
-                            top: rect.top - 44,
-                            left: rect.left + rect.width / 2
-                          });
-                        }, 350);
-                      }}
-                      onMouseLeave={() => {
-                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-                        setHoveredHabitHeader(null);
-                      }}
-                      className="routine-habit-header-box"
-                      style={{
-                        background: `${habit.color}20`, color: habit.color,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        cursor: 'pointer',
-                        position: 'relative'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        {ICONS[habit.icon] || <Activity size={20} />}
-                      </div>
-                      <span className="routine-habit-header-name" title={habit.name}>
-                        {habit.name}
-                      </span>
-                    </div>
+        visibleHabits.length === 0 ? (
+          <div className="glass glass-card" style={{ padding: '60px 20px', textAlign: 'center', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+              <EyeOff size={32} />
+            </div>
+            <div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', color: 'var(--text-primary)' }}>All Habits Are Hidden</h3>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '380px' }}>
+                You have hidden all your habits from the calendar and analytics view. Click below to unhide them.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowManageModal(true)}
+              className="btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', borderRadius: '12px', fontWeight: 600 }}
+            >
+              <Settings size={18} />
+              Manage Habits & Visibility
+            </button>
+          </div>
+        ) : (
+          <div className="sleek-scrollbar" style={{ overflowX: 'auto', paddingBottom: '6px' }}>
+            <table className="routine-table">
+              <thead>
+                <tr>
+                  <th className="routine-date-cell" style={{ textAlign: 'center', borderBottom: '1px solid var(--glass-border)', whiteSpace: 'nowrap', verticalAlign: 'middle', padding: '4px 8px' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Date</span>
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {monthDays.map(day => {
-                return (
-                  <tr
-                    key={day.dateStr}
-                    onClick={() => setSelectedDayModalDate(day.dateStr)}
-                    title="Click to view or edit habits for this day"
-                    style={{ cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {/* Horizontal Date Cell: Date + Day in one compact row */}
-                    <td className="routine-date-cell" style={{ whiteSpace: 'nowrap', padding: '3px 8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{
-                          fontWeight: 700,
-                          color: day.isToday ? 'var(--accent-primary)' : 'var(--text-primary)',
-                          fontSize: '0.94rem'
-                        }}>
-                          {day.monthName} {day.dayNum}
-                        </span>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          color: day.isToday ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                          background: day.isToday ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                          padding: '1.5px 6px',
-                          borderRadius: '5px',
-                          fontWeight: 600
-                        }}>
-                          {day.weekday}
+                  {visibleHabits.map(habit => (
+                    <th
+                      key={habit._id || habit.id}
+                      className="routine-habit-cell"
+                      style={{ borderBottom: '1px solid var(--glass-border)', position: 'relative' }}
+                    >
+                      <div
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                          hoverTimeoutRef.current = setTimeout(() => {
+                            setHoveredHabitHeader({
+                              id: habit._id || habit.id,
+                              text: `${habit.name} ${habit.unit ? `(${habit.unit})` : ''}`.trim(),
+                              top: rect.top - 44,
+                              left: rect.left + rect.width / 2
+                            });
+                          }, 350);
+                        }}
+                        onMouseLeave={() => {
+                          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                          setHoveredHabitHeader(null);
+                        }}
+                        className="routine-habit-header-box"
+                        style={{
+                          background: `${habit.color}20`, color: habit.color,
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          cursor: 'pointer',
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                          {ICONS[habit.icon] || <Activity size={20} />}
+                        </div>
+                        <span className="routine-habit-header-name" title={habit.name}>
+                          {habit.name}
                         </span>
                       </div>
-                    </td>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {monthDays.map(day => {
+                  return (
+                    <tr
+                      key={day.dateStr}
+                      onClick={() => setSelectedDayModalDate(day.dateStr)}
+                      title="Click to view or edit habits for this day"
+                      style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {/* Horizontal Date Cell: Date + Day in one compact row */}
+                      <td className="routine-date-cell" style={{ whiteSpace: 'nowrap', padding: '3px 8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{
+                            fontWeight: 700,
+                            color: day.isToday ? 'var(--accent-primary)' : 'var(--text-primary)',
+                            fontSize: '0.94rem'
+                          }}>
+                            {day.monthName} {day.dayNum}
+                          </span>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            color: day.isToday ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                            background: day.isToday ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                            padding: '1.5px 6px',
+                            borderRadius: '5px',
+                            fontWeight: 600
+                          }}>
+                            {day.weekday}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* Habit Columns */}
-                    {habits.map(habit => {
-                      const done = isHabitCompletedOnDate(habit, day.dateStr);
-                      return (
-                        <td key={habit._id || habit.id} className="routine-habit-cell">
-                          <div
-                            className="routine-habit-box"
-                            style={{
-                              background: done ? habit.color : 'rgba(255,255,255,0.025)',
-                              border: done ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                              color: '#ffffff',
-                              boxShadow: done ? `0 2px 8px ${habit.color}40` : 'none'
-                            }}
-                          >
-                            {done && <Check size={14} strokeWidth={3} />}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      {/* Habit Columns */}
+                      {visibleHabits.map(habit => {
+                        const done = isHabitCompletedOnDate(habit, day.dateStr);
+                        return (
+                          <td key={habit._id || habit.id} className="routine-habit-cell">
+                            <div
+                              className="routine-habit-box"
+                              style={{
+                                background: done ? habit.color : 'rgba(255,255,255,0.025)',
+                                border: done ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                                color: '#ffffff',
+                                boxShadow: done ? `0 2px 8px ${habit.color}40` : 'none'
+                              }}
+                            >
+                              {done && <Check size={14} strokeWidth={3} />}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
       ) : (
         /* ANALYTICS & TRENDS TAB */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -962,7 +1077,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
               scrollbarWidth: 'none', msOverflowStyle: 'none'
             }}
           >
-            {habits.map(habit => {
+            {visibleHabits.map(habit => {
               const hId = habit._id || habit.id;
               const completedInMonth = monthDays.filter(day => isHabitCompletedOnDate(habit, day.dateStr)).length;
 
@@ -1019,13 +1134,13 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <TrendingUp size={20} color="var(--accent-primary)" /> Numeric Progress Charts
             </h3>
-            {habits.filter(h => h.type === 'numeric').length === 0 ? (
+            {visibleHabits.filter(h => h.type === 'numeric').length === 0 ? (
               <div className="glass glass-card" style={{ padding: '30px', textAlign: 'center', borderRadius: '16px', color: 'var(--text-secondary)' }}>
-                No numeric habits configured yet.
+                No numeric habits visible or configured yet.
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '20px' }}>
-                {habits.filter(h => h.type === 'numeric').map(habit => (
+                {visibleHabits.filter(h => h.type === 'numeric').map(habit => (
                   <HabitNumericCard
                     key={habit._id || habit.id}
                     habit={habit}
@@ -1069,7 +1184,13 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '60vh', overflowY: 'auto' }}>
-              {habits.map(habit => {
+              {visibleHabits.length === 0 ? (
+                <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <EyeOff size={32} style={{ opacity: 0.5, marginBottom: '10px' }} />
+                  <div>All your habits are currently hidden.</div>
+                </div>
+              ) : (
+                visibleHabits.map(habit => {
                 const hId = habit._id || habit.id;
                 const log = getLogForHabit(hId, selectedDayModalDate);
                 const isCompleted = isHabitCompletedOnDate(habit, selectedDayModalDate);
@@ -1136,7 +1257,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
           </div>
         </div>,
@@ -1161,46 +1282,144 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             onClick={e => e.stopPropagation()}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                Manage Habits
-              </h3>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>
+                  Manage Habits
+                </h3>
+              </div>
               <button onClick={() => setShowManageModal(false)} className="btn-icon" style={{ padding: '6px' }}>
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '55vh', overflowY: 'auto' }}>
-              {habits.map(habit => {
+            <div className="sleek-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '55vh', overflowY: 'auto', overflowX: 'hidden', padding: '2px 4px' }}>
+              {habits.map((habit, index) => {
                 const hId = habit._id || habit.id;
+                const isDragging = draggingIndex === index;
+
                 return (
                   <div
                     key={hId}
+                    data-index={index}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      activeDragIndexRef.current = index;
+                      setDraggingIndex(index);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      if (activeDragIndexRef.current !== null && activeDragIndexRef.current !== index) {
+                        handleLiveSwap(index);
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      if (activeDragIndexRef.current !== null && activeDragIndexRef.current !== index) {
+                        handleLiveSwap(index);
+                      }
+                    }}
+                    onDragEnd={() => {
+                      if (activeDragIndexRef.current !== null) {
+                        saveReorderToBackend(habitsRef.current);
+                        activeDragIndexRef.current = null;
+                        setDraggingIndex(null);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (activeDragIndexRef.current !== null) {
+                        saveReorderToBackend(habitsRef.current);
+                        activeDragIndexRef.current = null;
+                        setDraggingIndex(null);
+                      }
+                    }}
+                    onTouchStart={(e) => {
+                      activeDragIndexRef.current = index;
+                      setDraggingIndex(index);
+                    }}
+                    onTouchMove={(e) => {
+                      if (activeDragIndexRef.current === null) return;
+                      const touch = e.touches[0];
+                      if (!touch) return;
+                      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                      const rowEl = targetEl ? targetEl.closest('[data-index]') : null;
+                      if (rowEl) {
+                        const targetIdx = parseInt(rowEl.getAttribute('data-index'), 10);
+                        if (!isNaN(targetIdx) && targetIdx !== activeDragIndexRef.current) {
+                          handleLiveSwap(targetIdx);
+                        }
+                      }
+                    }}
+                    onTouchEnd={() => {
+                      if (activeDragIndexRef.current !== null) {
+                        saveReorderToBackend(habitsRef.current);
+                        activeDragIndexRef.current = null;
+                        setDraggingIndex(null);
+                      }
+                    }}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '12px 16px', borderRadius: '14px',
-                      background: 'rgba(255,255,255,0.03)',
-                      border: '1px solid var(--glass-border)'
+                      background: isDragging ? 'rgba(59, 130, 246, 0.22)' : 'rgba(255,255,255,0.03)',
+                      border: isDragging ? '1.5px solid var(--accent-primary)' : '1px solid var(--glass-border)',
+                      transform: isDragging ? 'translateY(-2px)' : 'none',
+                      opacity: habit.is_hidden && !isDragging ? 0.6 : 1,
+                      boxShadow: isDragging ? '0 12px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(59, 130, 246, 0.4)' : 'none',
+                      position: 'relative',
+                      zIndex: isDragging ? 50 : 1,
+                      transition: isDragging ? 'none' : 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: isDragging ? 'grabbing' : 'grab'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div
+                        title="Hold & drag to reorder"
+                        style={{
+                          display: 'flex', alignItems: 'center',
+                          color: 'var(--text-secondary)',
+                          opacity: isDragging ? 1 : 0.7,
+                          cursor: isDragging ? 'grabbing' : 'grab',
+                          padding: '4px 2px',
+                          marginRight: '-2px',
+                          transition: 'opacity 0.2s'
+                        }}
+                      >
+                        <GripVertical size={20} />
+                      </div>
                       <div style={{
                         width: '36px', height: '36px', borderRadius: '10px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: `${habit.color}20`, color: habit.color
+                        background: `${habit.color}20`, color: habit.color,
+                        flexShrink: 0
                       }}>
                         {ICONS[habit.icon] || <Activity size={18} />}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem', color: habit.is_hidden ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
                           {habit.name}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
-                          {habit.type === 'numeric' ? `Numeric (${habit.unit})` : 'Boolean Check'}
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ whiteSpace: 'nowrap' }}>{habit.type === 'numeric' ? `Numeric (${habit.unit})` : 'Boolean Check'}</span>
+                          {habit.is_hidden && (
+                            <span className="mobile-hide" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#94a3b8', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600 }}>
+                              Hidden
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button
+                        onClick={() => handleToggleVisibility(habit)}
+                        className="btn-icon"
+                        title={habit.is_hidden ? "Show in Calendar & Analytics" : "Hide from Calendar & Analytics"}
+                        style={{ padding: '6px', color: habit.is_hidden ? '#94a3b8' : 'var(--accent-primary)' }}
+                      >
+                        {habit.is_hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
                       <button
                         onClick={() => {
                           setShowManageModal(false);
@@ -1372,6 +1591,37 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
           initialHabit={editingHabit}
           labels={labelsList}
         />
+      )}
+
+      {/* Quick Floating Button for Today's Habits (Mobile Only) matching Tasks Module */}
+      {!selectedDayModalDate && !isModalOpen && !showLinkageModal && createPortal(
+        <button
+          className="mobile-only"
+          onClick={() => setSelectedDayModalDate(todayStr)}
+          style={{
+            position: 'fixed',
+            bottom: '64px',
+            right: '32px',
+            width: '48px',
+            height: '48px',
+            padding: 0,
+            borderRadius: '12px',
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#f8fafc',
+            boxShadow: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            cursor: 'pointer'
+          }}
+          title="Log Today's Habits"
+        >
+          <Flame size={28} />
+        </button>,
+        document.body
       )}
     </div>
   );

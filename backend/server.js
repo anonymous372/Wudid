@@ -507,7 +507,7 @@ app.get('/api/events/upcoming', authenticateToken, async (req, res) => {
 // Get all habits, last 365 days of logs, and computed streak statistics
 app.get('/api/habits/data', authenticateToken, async (req, res) => {
   try {
-    const rawHabits = await Habit.find({ user_id: req.user_id, is_archived: false }).populate('linked_label_id').sort({ created_at: 1 });
+    const rawHabits = await Habit.find({ user_id: req.user_id, is_archived: false }).populate('linked_label_id').sort({ order: 1, created_at: 1 });
     
     const oneYearAgo = new Date();
     oneYearAgo.setDate(oneYearAgo.getDate() - 365);
@@ -527,82 +527,84 @@ app.get('/api/habits/data', authenticateToken, async (req, res) => {
     const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
     const habits = rawHabits.map(habit => {
-      const hLogs = logs.filter(l => l.habit_id.toString() === habit._id.toString());
-      const isDayCompleted = (dStr) => {
-        const l = hLogs.find(x => x.date === dStr);
+      const hId = habit._id.toString();
+      const habitLogs = logs.filter(l => l.habit_id.toString() === hId);
+
+      const logMap = {};
+      habitLogs.forEach(l => {
+        logMap[l.date] = l;
+      });
+
+      const totalCompleted = habitLogs.filter(l => {
+        if (habit.type === 'boolean') return l.value_bool === true;
+        if (habit.type === 'numeric') {
+          if (typeof l.value_num !== 'number' || l.value_num <= 0) return false;
+          if (habit.target_type === 'daily_quota' && habit.target_value && l.value_num < habit.target_value) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      }).length;
+
+      let currentStreak = 0;
+      let checkDate = new Date(today);
+      let checkStr = todayStr;
+      
+      const isCompletedOn = (dStr) => {
+        const l = logMap[dStr];
         if (!l) return false;
         if (habit.type === 'boolean') return l.value_bool === true;
         if (habit.type === 'numeric') {
-          if (habit.target_value === null || habit.target_value === undefined) return l.value_num !== null;
-          return l.value_num >= habit.target_value;
+          if (typeof l.value_num !== 'number' || l.value_num <= 0) return false;
+          if (habit.target_type === 'daily_quota' && habit.target_value && l.value_num < habit.target_value) {
+            return false;
+          }
+          return true;
         }
         return false;
       };
 
-      let currentStreak = 0;
-      let checkDate = new Date(today);
-      if (!isDayCompleted(todayStr)) {
-        if (isDayCompleted(yesterdayStr)) {
-          checkDate = new Date(yesterday);
-        } else {
-          checkDate = null;
-        }
+      if (!isCompletedOn(todayStr)) {
+        checkDate = yesterday;
+        checkStr = yesterdayStr;
       }
-      if (checkDate) {
-        while (true) {
-          const dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
-          if (isDayCompleted(dStr)) {
-            currentStreak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-          } else {
-            break;
-          }
+
+      while (true) {
+        if (isCompletedOn(checkStr)) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+          checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+        } else {
+          break;
         }
       }
 
-      let bestStreak = 0;
+      let longestStreak = 0;
       let tempStreak = 0;
-      let prevDate = null;
-      for (const lg of hLogs) {
-        if (isDayCompleted(lg.date)) {
-          const currD = new Date(lg.date);
-          if (prevDate) {
-            const diffDays = Math.round((currD - prevDate) / (1000 * 60 * 60 * 24));
-            if (diffDays === 1) {
-              tempStreak++;
-            } else if (diffDays > 1) {
-              tempStreak = 1;
-            }
-          } else {
-            tempStreak = 1;
-          }
-          if (tempStreak > bestStreak) bestStreak = tempStreak;
-          prevDate = currD;
+      let iterDate = new Date(oneYearAgo);
+      while (iterDate <= today) {
+        const dStr = `${iterDate.getFullYear()}-${String(iterDate.getMonth() + 1).padStart(2, '0')}-${String(iterDate.getDate()).padStart(2, '0')}`;
+        if (isCompletedOn(dStr)) {
+          tempStreak++;
+          if (tempStreak > longestStreak) longestStreak = tempStreak;
         } else {
           tempStreak = 0;
-          prevDate = null;
         }
+        iterDate.setDate(iterDate.getDate() + 1);
       }
-      if (currentStreak > bestStreak) bestStreak = currentStreak;
 
-      stats[habit._id.toString()] = {
-        currentStreak,
-        bestStreak,
-        totalLoggedDays: hLogs.filter(l => isDayCompleted(l.date)).length
+      return {
+        ...habit.toJSON(),
+        stats: {
+          currentStreak,
+          longestStreak,
+          totalCompleted
+        }
       };
-
-      const json = habit.toJSON();
-      if (habit.linked_label_id) {
-        json.linked_label_name = habit.linked_label_id.name;
-        json.linked_label_color = habit.linked_label_id.color;
-        json.linked_label_id = habit.linked_label_id._id.toString();
-      } else {
-        json.linked_label_id = null;
-      }
-      return json;
     });
 
-    res.json({ habits, logs, stats });
+    res.json({ habits, logs });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -614,6 +616,8 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
     const { name, type, unit, target_value, target_type, icon, color, frequency, linked_label_id } = req.body;
     if (!name || !type) return res.status(400).json({ error: 'Name and type are required' });
 
+    const count = await Habit.countDocuments({ user_id: req.user_id, is_archived: false });
+
     const newHabit = new Habit({
       user_id: req.user_id,
       name,
@@ -624,11 +628,44 @@ app.post('/api/habits', authenticateToken, async (req, res) => {
       icon: icon || 'Activity',
       color: color || '#3b82f6',
       frequency: frequency || 'daily',
-      linked_label_id: linked_label_id || null
+      linked_label_id: linked_label_id || null,
+      order: count
     });
 
     await newHabit.save();
     res.status(201).json(newHabit);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reorder habits
+app.put('/api/habits/reorder', authenticateToken, async (req, res) => {
+  try {
+    const { orders } = req.body;
+    if (!Array.isArray(orders)) return res.status(400).json({ error: 'Orders array is required' });
+    await Promise.all(
+      orders.map(({ id, order }) =>
+        Habit.findOneAndUpdate({ _id: id, user_id: req.user_id }, { order })
+      )
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Toggle or update habit visibility
+app.put('/api/habits/:id/visibility', authenticateToken, async (req, res) => {
+  try {
+    const { is_hidden } = req.body;
+    const habit = await Habit.findOneAndUpdate(
+      { _id: req.params.id, user_id: req.user_id },
+      { is_hidden: !!is_hidden },
+      { new: true }
+    );
+    if (!habit) return res.status(404).json({ error: 'Habit not found' });
+    res.json(habit);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -640,9 +677,15 @@ app.put('/api/habits/:id', authenticateToken, async (req, res) => {
     const habit = await Habit.findOne({ _id: req.params.id, user_id: req.user_id });
     if (!habit) return res.status(404).json({ error: 'Habit not found' });
 
-    const fields = ['name', 'type', 'unit', 'target_value', 'target_type', 'icon', 'color', 'frequency', 'linked_label_id', 'is_archived'];
+    const fields = ['name', 'type', 'unit', 'target_value', 'target_type', 'icon', 'color', 'frequency', 'linked_label_id', 'is_archived', 'is_hidden', 'order'];
     fields.forEach(f => {
-      if (req.body[f] !== undefined) habit[f] = req.body[f] || null;
+      if (req.body[f] !== undefined) {
+        if (req.body[f] === false || req.body[f] === 0 || req.body[f] === '') {
+          habit[f] = req.body[f];
+        } else {
+          habit[f] = req.body[f] || null;
+        }
+      }
     });
 
     await habit.save();

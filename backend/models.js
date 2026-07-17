@@ -61,7 +61,9 @@ const habitSchema = new mongoose.Schema({
   color: { type: String, default: '#3b82f6' },
   frequency: { type: String, default: 'daily' },
   linked_label_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Label', default: null },
+  is_hidden: { type: Boolean, default: false },
   is_archived: { type: Boolean, default: false },
+  order: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now }
 });
 habitSchema.set('toJSON', toJSONOptions);
