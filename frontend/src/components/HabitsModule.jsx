@@ -698,10 +698,28 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
 
   const [draggingIndex, setDraggingIndex] = useState(null);
   const activeDragIndexRef = useRef(null);
+  const canDragRef = useRef(false);
   const habitsRef = useRef(habits);
   useEffect(() => {
     habitsRef.current = habits;
   }, [habits]);
+
+  useEffect(() => {
+    const handleGlobalEnd = () => {
+      if (activeDragIndexRef.current !== null) {
+        saveReorderToBackend(habitsRef.current);
+        activeDragIndexRef.current = null;
+        setDraggingIndex(null);
+        canDragRef.current = false;
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalEnd);
+    window.addEventListener('touchend', handleGlobalEnd);
+    return () => {
+      window.removeEventListener('mouseup', handleGlobalEnd);
+      window.removeEventListener('touchend', handleGlobalEnd);
+    };
+  }, []);
 
   const saveReorderToBackend = async (updatedHabits) => {
     const orders = updatedHabits.map((h, idx) => ({ id: h._id || h.id, order: idx }));
@@ -1303,9 +1321,18 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                     data-index={index}
                     draggable={true}
                     onDragStart={(e) => {
+                      if (!canDragRef.current) {
+                        e.preventDefault();
+                        return;
+                      }
                       activeDragIndexRef.current = index;
                       setDraggingIndex(index);
                       e.dataTransfer.effectAllowed = 'move';
+                      try {
+                        const emptyImg = new Image();
+                        emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+                        e.dataTransfer.setDragImage(emptyImg, 0, 0);
+                      } catch { }
                     }}
                     onDragEnter={(e) => {
                       e.preventDefault();
@@ -1321,6 +1348,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                       }
                     }}
                     onDragEnd={() => {
+                      canDragRef.current = false;
                       if (activeDragIndexRef.current !== null) {
                         saveReorderToBackend(habitsRef.current);
                         activeDragIndexRef.current = null;
@@ -1329,30 +1357,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      if (activeDragIndexRef.current !== null) {
-                        saveReorderToBackend(habitsRef.current);
-                        activeDragIndexRef.current = null;
-                        setDraggingIndex(null);
-                      }
-                    }}
-                    onTouchStart={(e) => {
-                      activeDragIndexRef.current = index;
-                      setDraggingIndex(index);
-                    }}
-                    onTouchMove={(e) => {
-                      if (activeDragIndexRef.current === null) return;
-                      const touch = e.touches[0];
-                      if (!touch) return;
-                      const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-                      const rowEl = targetEl ? targetEl.closest('[data-index]') : null;
-                      if (rowEl) {
-                        const targetIdx = parseInt(rowEl.getAttribute('data-index'), 10);
-                        if (!isNaN(targetIdx) && targetIdx !== activeDragIndexRef.current) {
-                          handleLiveSwap(targetIdx);
-                        }
-                      }
-                    }}
-                    onTouchEnd={() => {
+                      canDragRef.current = false;
                       if (activeDragIndexRef.current !== null) {
                         saveReorderToBackend(habitsRef.current);
                         activeDragIndexRef.current = null;
@@ -1362,27 +1367,63 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '12px 16px', borderRadius: '14px',
-                      background: isDragging ? 'rgba(59, 130, 246, 0.22)' : 'rgba(255,255,255,0.03)',
+                      background: isDragging ? 'rgba(30, 41, 59, 0.98)' : 'rgba(255,255,255,0.03)',
                       border: isDragging ? '1.5px solid var(--accent-primary)' : '1px solid var(--glass-border)',
-                      transform: isDragging ? 'translateY(-2px)' : 'none',
                       opacity: habit.is_hidden && !isDragging ? 0.6 : 1,
-                      boxShadow: isDragging ? '0 12px 28px rgba(0, 0, 0, 0.6), 0 0 18px rgba(59, 130, 246, 0.4)' : 'none',
+                      boxShadow: isDragging ? '0 16px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(59, 130, 246, 0.55)' : 'none',
+                      transform: isDragging ? 'scale(1.01) translateY(-1px)' : 'none',
                       position: 'relative',
                       zIndex: isDragging ? 50 : 1,
                       transition: isDragging ? 'none' : 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      cursor: isDragging ? 'grabbing' : 'grab'
+                      cursor: isDragging ? 'grabbing' : 'default'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div
                         title="Hold & drag to reorder"
+                        onMouseDown={() => {
+                          canDragRef.current = true;
+                        }}
+                        onMouseUp={() => {
+                          canDragRef.current = false;
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          canDragRef.current = true;
+                          activeDragIndexRef.current = index;
+                          setDraggingIndex(index);
+                        }}
+                        onTouchMove={(e) => {
+                          e.stopPropagation();
+                          if (activeDragIndexRef.current === null) return;
+                          const touch = e.touches[0];
+                          if (!touch) return;
+                          const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+                          const rowEl = targetEl ? targetEl.closest('[data-index]') : null;
+                          if (rowEl) {
+                            const targetIdx = parseInt(rowEl.getAttribute('data-index'), 10);
+                            if (!isNaN(targetIdx) && targetIdx !== activeDragIndexRef.current) {
+                              handleLiveSwap(targetIdx);
+                            }
+                          }
+                        }}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation();
+                          canDragRef.current = false;
+                          if (activeDragIndexRef.current !== null) {
+                            saveReorderToBackend(habitsRef.current);
+                            activeDragIndexRef.current = null;
+                            setDraggingIndex(null);
+                          }
+                        }}
                         style={{
                           display: 'flex', alignItems: 'center',
                           color: 'var(--text-secondary)',
                           opacity: isDragging ? 1 : 0.7,
                           cursor: isDragging ? 'grabbing' : 'grab',
-                          padding: '4px 2px',
+                          padding: '8px 6px',
                           marginRight: '-2px',
+                          touchAction: 'none',
                           transition: 'opacity 0.2s'
                         }}
                       >
