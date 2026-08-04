@@ -154,8 +154,14 @@ function HabitChartTooltip({ active, payload, hId, unit, color, tableMonth }) {
     const container = document.getElementById(`habit-chart-tooltip-${hId}`);
     if (!container) return null;
 
-    const dayNumber = parseInt(data.dateString, 10);
-    const dateFormatted = !isNaN(dayNumber) ? `${dayNumber} ${MONTH_NAMES[tableMonth].slice(0, 3)}` : data.dateString;
+    let dateFormatted = data.dateString;
+    if (data.fullDate) {
+      const [y, m, d] = data.fullDate.split('-').map(Number);
+      dateFormatted = `${d} ${MONTH_NAMES[m - 1].slice(0, 3)}`;
+    } else {
+      const dayNumber = parseInt(data.dateString, 10);
+      dateFormatted = !isNaN(dayNumber) ? `${dayNumber} ${MONTH_NAMES[tableMonth].slice(0, 3)}` : data.dateString;
+    }
 
     return createPortal(
       <div style={{
@@ -188,7 +194,7 @@ function HabitChartTooltip({ active, payload, hId, unit, color, tableMonth }) {
   return null;
 }
 
-function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
+function HabitNumericCard({ habit, logs, tableYear, tableMonth, chartsViewScope }) {
   const hId = habit._id || habit.id;
   const storageKey = `wudid_habit_chart_${habit.name ? habit.name.toLowerCase().replace(/\s+/g, '_') : hId}`;
   const [chartType, setChartType] = useState(() => {
@@ -221,14 +227,29 @@ function HabitNumericCard({ habit, logs, tableYear, tableMonth }) {
     } catch { }
   }, [storageKey, chartType]);
 
-  const monthPrefix = `${tableYear}-${String(tableMonth + 1).padStart(2, '0')}`;
-  const chartData = [...logs]
-    .filter(l => (l.habit_id?._id || l.habit_id || '').toString() === hId.toString() && l.value_num !== null && l.date && l.date.startsWith(monthPrefix))
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .map(l => ({
-      dateString: l.date.slice(8),
+  let chartDataRaw = [...logs]
+    .filter(l => (l.habit_id?._id || l.habit_id || '').toString() === hId.toString() && l.value_num !== null && l.date)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  if (chartsViewScope === '7entries') {
+    chartDataRaw = chartDataRaw.slice(-7);
+  } else if (chartsViewScope === '15entries') {
+    chartDataRaw = chartDataRaw.slice(-15);
+  } else {
+    const monthPrefix = `${tableYear}-${String(tableMonth + 1).padStart(2, '0')}`;
+    chartDataRaw = chartDataRaw.filter(l => l.date.startsWith(monthPrefix));
+  }
+
+  const chartData = chartDataRaw.map(l => {
+    const dateObj = new Date(l.date);
+    return {
+      dateString: chartsViewScope === 'month'
+        ? l.date.slice(8)
+        : `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}`,
+      fullDate: l.date,
       value: l.value_num
-    }));
+    };
+  });
   const allVals = chartData.map(d => d.value);
   if (habit.target_value !== null && habit.target_value !== undefined && habit.target_value !== '') {
     allVals.push(Number(habit.target_value));
@@ -525,6 +546,20 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
 
   const [tableYear, setTableYear] = useState(today.getFullYear());
   const [tableMonth, setTableMonth] = useState(today.getMonth());
+  const [chartsViewScope, setChartsViewScope] = useState(() => {
+    try {
+      const saved = localStorage.getItem('wudid_habits_chart_scope');
+      return saved ? saved : 'month';
+    } catch {
+      return 'month';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('wudid_habits_chart_scope', chartsViewScope);
+    } catch { }
+  }, [chartsViewScope]);
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const saved = localStorage.getItem('wudid_habits_active_tab') || sessionStorage.getItem('wudid_habits_active_tab');
@@ -1149,9 +1184,53 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
 
           {/* Numeric Trend Charts */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <TrendingUp size={20} color="var(--accent-primary)" /> Numeric Progress Charts
-            </h3>
+            <div className="habits-chart-toggle">
+              <button
+                onClick={() => setChartsViewScope('7entries')}
+                style={{
+                  padding: '6px 16px',
+                  background: chartsViewScope === '7entries' ? 'var(--accent-primary)' : 'transparent',
+                  color: chartsViewScope === '7entries' ? '#fff' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+              >
+                Last 7 Entries
+              </button>
+              <button
+                onClick={() => setChartsViewScope('15entries')}
+                style={{
+                  padding: '6px 16px',
+                  background: chartsViewScope === '15entries' ? 'var(--accent-primary)' : 'transparent',
+                  color: chartsViewScope === '15entries' ? '#fff' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+              >
+                Last 15 Entries
+              </button>
+              <button
+                onClick={() => setChartsViewScope('month')}
+                style={{
+                  padding: '6px 16px',
+                  background: chartsViewScope === 'month' ? 'var(--accent-primary)' : 'transparent',
+                  color: chartsViewScope === 'month' ? '#fff' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+              >
+                Full Month
+              </button>
+            </div>
             {visibleHabits.filter(h => h.type === 'numeric').length === 0 ? (
               <div className="glass glass-card" style={{ padding: '30px', textAlign: 'center', borderRadius: '16px', color: 'var(--text-secondary)' }}>
                 No numeric habits visible or configured yet.
@@ -1165,6 +1244,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                     logs={logs}
                     tableYear={tableYear}
                     tableMonth={tableMonth}
+                    chartsViewScope={chartsViewScope}
                   />
                 ))}
               </div>

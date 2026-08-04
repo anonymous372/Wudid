@@ -74,7 +74,7 @@ export default function Login() {
         
         {status === 'success' ? (
           <div style={{ padding: '24px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '16px', color: '#4ade80' }}>
-            <p style={{ margin: 0 }}>Magic link sent! Check your terminal console to log in.</p>
+            <p style={{ margin: 0 }}>Magic link sent! Check your email to log in.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

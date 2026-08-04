@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Rectangle, Sector, CartesianGrid } from 'recharts';
-import { BarChart2, TrendingUp, Activity, ChevronDown, Filter, Check, Frown } from 'lucide-react';
+import { BarChart2, TrendingUp, Activity, ChevronDown, Filter, Check, Frown, X, Calendar, Tag } from 'lucide-react';
 import YearlyHeatmap from './YearlyHeatmap';
 
 const API_BASE = 'http://localhost:3001/api';
@@ -23,6 +23,7 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   const [stats, setStats] = useState({ totalTasks: 0, dailyData: [], labelData: [], rawTasks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activePieIndex, setActivePieIndex] = useState(-1);
+  const [selectedPieLabel, setSelectedPieLabel] = useState(null);
   const monthCacheRef = useRef({});
 
   useEffect(() => {
@@ -80,12 +81,13 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
 
   const getFullRangeDates = () => {
     const dates = [];
-    if (viewScope === 'week') {
+    if (viewScope === 'week' || viewScope === '15days') {
       if (!isCurrentMonth) {
         return [];
       }
+      const daysCount = viewScope === 'week' ? 6 : 14;
       const endDate = new Date(today);
-      for (let i = 6; i >= 0; i--) {
+      for (let i = daysCount; i >= 0; i--) {
         const d = new Date(endDate);
         d.setDate(d.getDate() - i);
         dates.push(d);
@@ -208,16 +210,17 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
   });
 
   let displayLabelData = stats.labelData;
-  if (viewScope === 'week' && !isCurrentMonth) {
+  if ((viewScope === 'week' || viewScope === '15days') && !isCurrentMonth) {
     displayLabelData = [];
-  } else if ((viewScope === 'week' || isFilterActive) && stats.rawTasks) {
+  } else if ((viewScope === 'week' || viewScope === '15days' || isFilterActive) && stats.rawTasks) {
     const labelDataMap = {};
     let startStr = '', endStr = '';
 
-    if (viewScope === 'week') {
+    if (viewScope === 'week' || viewScope === '15days') {
+      const daysCount = viewScope === 'week' ? 6 : 14;
       const endDate = new Date(today);
       const startDate = new Date(endDate);
-      startDate.setDate(endDate.getDate() - 6);
+      startDate.setDate(endDate.getDate() - daysCount);
 
       startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
       endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
@@ -226,7 +229,7 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
     for (const task of stats.rawTasks) {
       if (!task.is_completed) continue;
 
-      if (viewScope === 'week' && (task.date < startStr || task.date > endStr)) {
+      if ((viewScope === 'week' || viewScope === '15days') && (task.date < startStr || task.date > endStr)) {
         continue;
       }
 
@@ -243,10 +246,38 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
     displayLabelData = Object.values(labelDataMap).sort((a, b) => b.value - a.value);
   }
 
+  const getMatchingTasksForLabel = () => {
+    if (!selectedPieLabel || !stats.rawTasks) return [];
+
+    let startStr = '', endStr = '';
+    if (viewScope === 'week' || viewScope === '15days') {
+      const daysCount = viewScope === 'week' ? 6 : 14;
+      const endDate = new Date(today);
+      const startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - daysCount);
+      startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+      endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    } else {
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      startStr = `${year}-${month}-01`;
+      const maxDay = new Date(year, currentDate.getMonth() + 1, 0).getDate();
+      endStr = `${year}-${month}-${String(maxDay).padStart(2, '0')}`;
+    }
+
+    return stats.rawTasks.filter(task => {
+      if (!task.is_completed) return false;
+      if (task.date < startStr || task.date > endStr) return false;
+
+      const lblName = task.label_name || 'Unlabeled';
+      return lblName === selectedPieLabel.name;
+    }).sort((a, b) => b.date.localeCompare(a.date));
+  };
+
   const renderActiveShape = (props) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
     return (
-      <g>
+      <g style={{ cursor: 'pointer' }} onClick={() => setSelectedPieLabel(payload)}>
         <text x={cx} y={cy - 5} textAnchor="middle" fill="#fff" fontSize="1.5rem" fontWeight="700" dominantBaseline="central">
           {value}
         </text>
@@ -261,7 +292,8 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
-          style={{ outline: 'none' }}
+          style={{ outline: 'none', cursor: 'pointer' }}
+          onClick={() => setSelectedPieLabel(payload)}
         />
       </g>
     );
@@ -325,6 +357,21 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
             }}
           >
             {weekTitle}
+          </button>
+          <button
+            onClick={() => setViewScope('15days')}
+            style={{
+              padding: '6px 16px',
+              background: viewScope === '15days' ? 'var(--accent-primary)' : 'transparent',
+              color: viewScope === '15days' ? '#fff' : 'var(--text-secondary)',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              transition: 'all 0.2s'
+            }}
+          >
+            Last 15 Days
           </button>
           <button
             onClick={() => setViewScope('month')}
@@ -510,7 +557,7 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                 </div>
               ) : (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 20px', fontSize: '0.85rem' }}>
-                  {viewScope === 'week' && !isCurrentMonth ? (
+                  {(viewScope === 'week' || viewScope === '15days') && !isCurrentMonth ? (
                     <>
                       <span>Only available for current month</span>
                       <Frown size={22} style={{ opacity: 0.6 }} />
@@ -526,7 +573,9 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Label Breakdown</h3>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{viewScope === 'week' ? weekTitle : currentMonthName}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {viewScope === 'week' ? weekTitle : viewScope === '15days' ? 'Last 15 Days' : currentMonthName}
+                  </div>
                 </div>
                 {displayLabelData.length > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -555,9 +604,17 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                         activeShape={renderActiveShape}
                         onMouseEnter={(_, index) => setActivePieIndex(index)}
                         onMouseLeave={() => setActivePieIndex(-1)}
+                        onClick={(data) => {
+                          if (data && data.payload) setSelectedPieLabel(data.payload);
+                        }}
                       >
                         {displayLabelData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} style={{ outline: 'none' }} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            style={{ outline: 'none', cursor: 'pointer' }}
+                            onClick={() => setSelectedPieLabel(entry)}
+                          />
                         ))}
                       </Pie>
                       <Legend
@@ -565,15 +622,29 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
                         verticalAlign="middle"
                         align="right"
                         iconType="circle"
-                        wrapperStyle={{ fontSize: '12px' }}
-                        formatter={(value) => <span style={{ color: 'var(--text-secondary)' }}>{value}</span>}
+                        wrapperStyle={{ fontSize: '12px', cursor: 'pointer' }}
+                        formatter={(value, entry) => (
+                          <span
+                            style={{ color: 'var(--text-secondary)', transition: 'color 0.2s', cursor: 'pointer' }}
+                            onMouseEnter={(e) => e.target.style.color = 'var(--text-primary)'}
+                            onMouseLeave={(e) => e.target.style.color = 'var(--text-secondary)'}
+                            onClick={() => {
+                              if (entry && entry.payload) setSelectedPieLabel(entry.payload);
+                            }}
+                          >
+                            {value}
+                          </span>
+                        )}
+                        onClick={(data) => {
+                          if (data && data.payload) setSelectedPieLabel(data.payload);
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 20px', fontSize: '0.85rem' }}>
-                  {viewScope === 'week' && !isCurrentMonth ? (
+                  {(viewScope === 'week' || viewScope === '15days') && !isCurrentMonth ? (
                     <>
                       <span>Only available for current month</span>
                       <Frown size={22} style={{ opacity: 0.6 }} />
@@ -589,6 +660,171 @@ export default function AnalyticsGrid({ currentDate, labels, refreshKey }) {
       )}
 
       <YearlyHeatmap year={currentDate.getFullYear()} selectedLabels={selectedLabels} refreshKey={refreshKey} />
+
+      {/* Label Breakdown Modal */}
+      {selectedPieLabel && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 100000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setSelectedPieLabel(null)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '540px',
+              maxHeight: '80vh',
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'rgba(30, 41, 59, 0.98)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '24px',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.2)',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 24px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '20px',
+              background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <h3 className="modal-title-text" style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
+                    Completed Tasks
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      color: selectedPieLabel.color,
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <Tag size={13} style={{ flexShrink: 0 }} />
+                      {selectedPieLabel.name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedPieLabel(null)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  color: 'var(--text-secondary)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                title="Close"
+              >
+                <X size={24} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Modal Body / Task List */}
+            <div className="sleek-scrollbar" style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '20px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              {getMatchingTasksForLabel().length > 0 ? (
+                getMatchingTasksForLabel().map((task, idx) => {
+                  const dateFormatted = task.date ? (() => {
+                    const [y, m, d] = task.date.split('-').map(Number);
+                    const dateObj = new Date(y, m - 1, d);
+                    return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  })() : '';
+
+                  return (
+                    <div
+                      key={task.id || task._id || idx}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '14px 16px',
+                        borderRadius: '14px',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        transition: 'all 0.2s ease',
+                        gap: '16px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '8px',
+                          background: `rgba(16, 185, 129, 0.15)`, color: '#10b981',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}>
+                          <Check size={16} strokeWidth={3} />
+                        </div>
+                        <span style={{ color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 500, wordBreak: 'break-word', lineHeight: 1.4 }}>
+                          {task.text}
+                        </span>
+                      </div>
+                      <div style={{
+                        flexShrink: 0,
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.04)'
+                      }}>
+                        {dateFormatted}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{
+                  padding: '40px 20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  color: 'var(--text-secondary)',
+                  textAlign: 'center'
+                }}>
+                  <Frown size={28} style={{ opacity: 0.5 }} />
+                  <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>No completed tasks found for this label in {viewScope === 'week' ? 'the last 7 days' : viewScope === '15days' ? 'the last 15 days' : currentMonthName}.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
