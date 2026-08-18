@@ -1065,7 +1065,10 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                   const boolBasis = `calc(${100/boolCols}% - ${12*(boolCols-1)/boolCols}px)`;
 
                   return (
-                    <div className="today-progress-grid-boolean">
+                    <div 
+                      className="today-progress-grid-boolean" 
+                      style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
+                    >
                       {visibleHabits.filter(h => h.type === 'boolean').map(habit => {
                         const hId = habit._id || habit.id;
                         const isCompleted = isHabitCompletedOnDate(habit, todayStr);
@@ -1074,7 +1077,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                             key={hId}
                             className="glass habit-card-boolean"
                             style={{
-                              flex: `1 1 ${boolBasis}`, minWidth: '70px', maxWidth: '300px',
+                              flex: `1 1 ${boolBasis}`, minWidth: '70px',
                               padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
                               cursor: 'pointer', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
                               background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
@@ -1104,7 +1107,10 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                   const numBasis = `calc(${100/numCols}% - ${12*(numCols-1)/numCols}px)`;
 
                   return (
-                    <div className="today-progress-grid-numeric">
+                    <div 
+                      className="today-progress-grid-numeric"
+                      style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}
+                    >
                       {visibleHabits.filter(h => h.type === 'numeric').map(habit => {
                         const hId = habit._id || habit.id;
                         const log = getLogForHabit(hId, todayStr);
@@ -1114,7 +1120,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                             key={hId}
                             className="glass habit-card-numeric"
                             style={{
-                              flex: `1 1 ${numBasis}`, minWidth: '150px', maxWidth: '400px',
+                              flex: `1 1 ${numBasis}`, minWidth: '150px',
                               padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
                               cursor: 'default', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
                               background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
