@@ -1079,8 +1079,8 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                             style={{
                               flex: `1 1 ${boolBasis}`, minWidth: '70px',
                               padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
-                              cursor: 'pointer', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
-                              background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                              cursor: 'pointer', border: isCompleted ? `1px solid ${habit.color}60` : '1px solid var(--glass-border)',
+                              background: isCompleted ? `${habit.color}25` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                             }}
                             onClick={() => handleToggleBoolForDate(habit, todayStr)}
                           >
@@ -1122,8 +1122,8 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                             style={{
                               flex: `1 1 ${numBasis}`, minWidth: '150px',
                               padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
-                              cursor: 'default', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
-                              background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                              cursor: 'default', border: isCompleted ? `1px solid ${habit.color}60` : '1px solid var(--glass-border)',
+                              background: isCompleted ? `${habit.color}25` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                             }}
                           >
                             <div className="habit-icon-container" style={{
