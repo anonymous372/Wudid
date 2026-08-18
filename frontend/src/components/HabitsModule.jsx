@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Plus, Flame, Star, Check, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Activity, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Zap, Coffee, Pencil, Trash2, TrendingUp, BarChart2, BarChart3, Award, Sliders, Settings, Hash, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush, Shirt, Phone, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from 'recharts';
 import confetti from 'canvas-confetti';
 import HabitModal from './HabitModal';
@@ -22,19 +22,22 @@ const ICONS = {
   Moon: <Moon size={20} />,
   BedDouble: <BedDouble size={20} />,
   Sparkles: <Sparkles size={20} />,
+  Brush: <Brush size={20} />,
+  Shirt: <Shirt size={20} />,
   BookOpen: <BookOpen size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
   Coffee: <Coffee size={20} />,
   Target: <Target size={20} />,
-  Timer: <Timer size={20} />
+  Timer: <Timer size={20} />,
+  Phone: <Phone size={20} />
 };
 
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 /* Requirement 4: Double-Click Numeric Value to Edit */
-function DoubleTapNumericCell({ habit, log, onSave, isCompleted }) {
+function DoubleTapNumericCell({ habit, log, onSave, isCompleted, singleClick = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const currentNum = log && log.value_num !== null && log.value_num !== undefined ? log.value_num : null;
   const [val, setVal] = useState(currentNum !== null ? String(currentNum) : '');
@@ -70,12 +73,13 @@ function DoubleTapNumericCell({ habit, log, onSave, isCompleted }) {
 
   if (isEditing) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <div style={{
           display: 'flex', alignItems: 'center',
-          background: 'rgba(255, 255, 255, 0.08)',
-          borderRadius: '10px',
-          overflow: 'hidden'
+          background: 'rgba(255, 255, 255, 0.03)',
+          borderRadius: '6px',
+          overflow: 'hidden',
+          height: '24px'
         }}>
           <input
             type="number"
@@ -87,35 +91,36 @@ function DoubleTapNumericCell({ habit, log, onSave, isCompleted }) {
             onKeyDown={handleKeyDown}
             className="no-spinner"
             style={{
-              width: '58px', padding: '6px 4px', fontSize: '1.05rem', fontWeight: 700,
+              width: '46px', padding: '0 4px', fontSize: '0.9rem', fontWeight: 600,
               textAlign: 'center', border: 'none', background: 'transparent',
-              color: 'var(--text-primary)', outline: 'none', boxShadow: 'none'
+              color: 'var(--text-primary)', outline: 'none', boxShadow: 'none',
+              height: '100%'
             }}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', background: 'transparent', height: '100%' }}>
             <button
               type="button"
               onMouseDown={(e) => handleStep(0.5, e)}
               onTouchStart={(e) => handleStep(0.5, e)}
               style={{
-                background: 'transparent', border: 'none', padding: '2px 6px',
+                background: 'transparent', border: 'none', padding: '0 4px', height: '50%',
                 color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}
               title="Increase by 0.5"
             >
-              <ChevronUp size={13} strokeWidth={3} />
+              <ChevronUp size={11} strokeWidth={3} />
             </button>
             <button
               type="button"
               onMouseDown={(e) => handleStep(-0.5, e)}
               onTouchStart={(e) => handleStep(-0.5, e)}
               style={{
-                background: 'transparent', border: 'none', padding: '2px 6px',
+                background: 'transparent', border: 'none', padding: '0 4px', height: '50%',
                 color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}
               title="Decrease by 0.5"
             >
-              <ChevronDown size={13} strokeWidth={3} />
+              <ChevronDown size={11} strokeWidth={3} />
             </button>
           </div>
         </div>
@@ -126,14 +131,15 @@ function DoubleTapNumericCell({ habit, log, onSave, isCompleted }) {
 
   return (
     <div
-      onClick={() => setIsEditing(true)}
-      onDoubleClick={() => setIsEditing(true)}
-      title="Tap or double-click to edit numeric value"
+      onDoubleClick={!singleClick ? () => setIsEditing(true) : undefined}
+      onClick={singleClick ? (e) => { e.stopPropagation(); setIsEditing(true); } : undefined}
+      title={singleClick ? "Click to edit" : "Double-click to edit"}
       style={{
         display: 'flex', alignItems: 'center', gap: '6px',
-        padding: '6px 14px', borderRadius: '10px',
-        background: currentNum !== null ? `${habit.color}18` : 'rgba(255,255,255,0.04)',
-        border: currentNum !== null ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
+        padding: singleClick ? '0' : '6px 14px', 
+        borderRadius: singleClick ? '0' : '10px',
+        background: singleClick ? 'transparent' : (currentNum !== null ? `${habit.color}18` : 'rgba(255,255,255,0.04)'),
+        border: singleClick ? 'none' : (currentNum !== null ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)'),
         cursor: 'pointer', transition: 'all 0.2s',
         userSelect: 'none'
       }}
@@ -590,8 +596,8 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
   const [hoveredHabitHeader, setHoveredHabitHeader] = useState(null);
   const hoverTimeoutRef = React.useRef(null);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     const token = localStorage.getItem('wudid_token');
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
     try {
@@ -612,12 +618,12 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
     } catch (err) {
       console.error('Failed to load habits:', err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(habits.length > 0);
   }, [refreshKey]);
 
   const getLogForHabit = (habitId, dateStr) => {
@@ -633,8 +639,21 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
   };
 
   const handleToggleBoolForDate = async (habit, dateStr) => {
-    const currentLog = getLogForHabit(habit._id || habit.id, dateStr);
+    const habitId = habit._id || habit.id;
+    const currentLog = getLogForHabit(habitId, dateStr);
     const newVal = !(currentLog && currentLog.value_bool === true);
+
+    // Optimistic Update
+    setLogs(prev => {
+      const next = [...prev];
+      const idx = next.findIndex(l => (l.habit_id?._id || l.habit_id || '').toString() === habitId.toString() && l.date === dateStr);
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], value_bool: newVal };
+      } else {
+        next.push({ habit_id: habitId, date: dateStr, value_bool: newVal, value_num: null });
+      }
+      return next;
+    });
 
     if (newVal && dateStr === todayStr) {
       confetti({ particleCount: 60, spread: 60, origin: { y: 0.8 } });
@@ -651,22 +670,40 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
         method: 'POST',
         headers,
         body: JSON.stringify({
-          habit_id: habit._id || habit.id,
+          habit_id: habitId,
           date: dateStr,
           value_bool: newVal
         })
       });
       if (res.ok) {
-        fetchData();
+        fetchData(true);
         if (onUpdate) onUpdate();
+      } else {
+        fetchData(true); // Revert optimistic on fail
       }
     } catch (err) {
       console.error('Failed to log habit:', err);
+      fetchData(true); // Revert optimistic on fail
     }
   };
 
   const handleNumericChangeForDate = async (habit, val, dateStr) => {
+    const habitId = habit._id || habit.id;
     const numVal = val === '' ? null : Number(val);
+    const currentLog = getLogForHabit(habitId, dateStr);
+
+    // Optimistic Update
+    setLogs(prev => {
+      const next = [...prev];
+      const idx = next.findIndex(l => (l.habit_id?._id || l.habit_id || '').toString() === habitId.toString() && l.date === dateStr);
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], value_num: numVal };
+      } else {
+        next.push({ habit_id: habitId, date: dateStr, value_bool: false, value_num: numVal });
+      }
+      return next;
+    });
+
     const token = localStorage.getItem('wudid_token');
     const headers = {
       'Content-Type': 'application/json',
@@ -678,16 +715,20 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
         method: 'POST',
         headers,
         body: JSON.stringify({
-          habit_id: habit._id || habit.id,
+          habit_id: habitId,
           date: dateStr,
           value_num: numVal
         })
       });
       if (res.ok) {
-        fetchData();
+        fetchData(true);
+        if (onUpdate) onUpdate();
+      } else {
+        fetchData(true); // Revert
       }
     } catch (err) {
       console.error('Failed to log habit numeric:', err);
+      fetchData(true); // Revert
     }
   };
 
@@ -908,12 +949,12 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             <Settings size={19} />
           </button>
 
-          {/* Link Habits to Task Labels Button */}
+          {/* Link Habits to Task Labels Button (Hidden per user request) */}
           <button
             onClick={() => setShowLinkageModal(true)}
             className="btn-icon"
             title="Link Habits to Task Labels (Auto-Sync)"
-            style={{ position: 'relative' }}
+            style={{ position: 'relative', display: 'none' }}
           >
             <Link2 size={19} />
           </button>
@@ -1008,12 +1049,107 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             </button>
           </div>
         ) : (
-          <div className="sleek-scrollbar" style={{ overflowX: 'auto', paddingBottom: '6px' }}>
-            <table className="routine-table">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Today's Progress Section */}
+            <div>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Today's Progress</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* BOOLEAN HABITS */}
+                {visibleHabits.some(h => h.type === 'boolean') && (() => {
+                  const boolCount = visibleHabits.filter(h => h.type === 'boolean').length;
+                  let boolCols = 4;
+                  if (boolCount === 1) boolCols = 1;
+                  else if (boolCount === 2) boolCols = 2;
+                  else if (boolCount === 3) boolCols = 3;
+                  else if (boolCount === 5 || boolCount === 6) boolCols = 3;
+                  const boolBasis = `calc(${100/boolCols}% - ${12*(boolCols-1)/boolCols}px)`;
+
+                  return (
+                    <div className="today-progress-grid-boolean">
+                      {visibleHabits.filter(h => h.type === 'boolean').map(habit => {
+                        const hId = habit._id || habit.id;
+                        const isCompleted = isHabitCompletedOnDate(habit, todayStr);
+                        return (
+                          <div
+                            key={hId}
+                            className="glass habit-card-boolean"
+                            style={{
+                              flex: `1 1 ${boolBasis}`, minWidth: '70px', maxWidth: '300px',
+                              padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
+                              cursor: 'pointer', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
+                              background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            }}
+                            onClick={() => handleToggleBoolForDate(habit, todayStr)}
+                          >
+                            <div className="habit-icon-container" style={{
+                              width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: isCompleted ? habit.color : `${habit.color}18`, color: isCompleted ? '#fff' : habit.color
+                            }}>
+                              {isCompleted ? <Check size={18} strokeWidth={3} /> : (ICONS[habit.icon] || <Activity size={18} />)}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0px', justifyContent: 'center' }}>
+                              <span className="habit-name-text" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{habit.name}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* NUMERIC HABITS */}
+                {visibleHabits.some(h => h.type === 'numeric') && (() => {
+                  const numCount = visibleHabits.filter(h => h.type === 'numeric').length;
+                  const numCols = numCount === 1 ? 1 : 2;
+                  const numBasis = `calc(${100/numCols}% - ${12*(numCols-1)/numCols}px)`;
+
+                  return (
+                    <div className="today-progress-grid-numeric">
+                      {visibleHabits.filter(h => h.type === 'numeric').map(habit => {
+                        const hId = habit._id || habit.id;
+                        const log = getLogForHabit(hId, todayStr);
+                        const isCompleted = isHabitCompletedOnDate(habit, todayStr);
+                        return (
+                          <div
+                            key={hId}
+                            className="glass habit-card-numeric"
+                            style={{
+                              flex: `1 1 ${numBasis}`, minWidth: '150px', maxWidth: '400px',
+                              padding: '10px 14px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '12px', height: '60px',
+                              cursor: 'default', border: isCompleted ? `1px solid ${habit.color}50` : '1px solid var(--glass-border)',
+                              background: isCompleted ? `${habit.color}15` : 'var(--glass-bg)', transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            }}
+                          >
+                            <div className="habit-icon-container" style={{
+                              width: '36px', height: '36px', borderRadius: '12px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: isCompleted ? habit.color : `${habit.color}18`, color: isCompleted ? '#fff' : habit.color
+                            }}>
+                              {ICONS[habit.icon] || <Activity size={18} />}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0px', justifyContent: 'center' }}>
+                              <span className="habit-name-text" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{habit.name}</span>
+                              <div style={{ marginTop: '-2px' }}>
+                                <DoubleTapNumericCell
+                                  habit={habit} log={log} onSave={(h, v) => handleNumericChangeForDate(h, v, todayStr)}
+                                  isCompleted={isCompleted} singleClick={true}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div className="sleek-scrollbar" style={{ overflowX: 'auto', paddingBottom: '6px' }}>
+              <table className="routine-table">
               <thead>
                 <tr>
                   <th className="routine-date-cell" style={{ textAlign: 'center', borderBottom: '1px solid var(--glass-border)', whiteSpace: 'nowrap', verticalAlign: 'middle', padding: '4px 8px' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Date</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Date</span>
                   </th>
                   {visibleHabits.map(habit => (
                     <th
@@ -1114,68 +1250,92 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )
-      ) : (
-        /* ANALYTICS & TRENDS TAB */
+      ) : activeTab === 'analytics' ? (    /* ANALYTICS & TRENDS TAB */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Streaks & Leaderboard Grid */}
-          {/* Summary Cards Row - Horizontally scrollable, no scrollbar */}
+          {/* Summary Cards Row - Horizontally scrollable, 2 rows */}
           <div
             className="hide-scrollbar"
             style={{
-              display: 'flex', flexDirection: 'row', gap: '16px',
-              overflowX: 'auto', paddingBottom: '4px',
-              scrollbarWidth: 'none', msOverflowStyle: 'none'
+              display: 'grid', gridTemplateRows: 'repeat(2, auto)', gridAutoFlow: 'column', gridAutoColumns: 'minmax(220px, 1fr)',
+              gap: '16px', overflowX: 'auto', paddingBottom: '8px', scrollbarWidth: 'none', msOverflowStyle: 'none'
             }}
           >
             {visibleHabits.map(habit => {
               const hId = habit._id || habit.id;
               const completedInMonth = monthDays.filter(day => isHabitCompletedOnDate(habit, day.dateStr)).length;
 
+              const completedLogs = logs.filter(l => 
+                (l.habit_id?._id || l.habit_id || '').toString() === hId.toString() && 
+                ((habit.type === 'boolean' && l.value_bool === true) || (habit.type === 'numeric' && l.value_num !== null && l.value_num > 0))
+              ).sort((a, b) => new Date(b.date) - new Date(a.date));
+              const lastMarkedDate = completedLogs.length > 0 ? completedLogs[0].date : null;
+
+              const formatLastMarked = (dStr) => {
+                if (!dStr) return 'Never';
+                if (dStr === todayStr) return 'Today';
+                const today = new Date(todayStr);
+                const marked = new Date(dStr);
+                today.setHours(0,0,0,0);
+                marked.setHours(0,0,0,0);
+                const diffDays = Math.round((today - marked) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) return 'Yesterday';
+                if (diffDays > 1 && diffDays < 7) return `${diffDays} days ago`;
+                return marked.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+              };
+
               return (
                 <div
                   key={hId}
                   className="glass glass-card"
                   style={{
-                    minWidth: '220px', flexShrink: 0,
-                    padding: '16px', borderRadius: '18px',
+                    padding: '12px 14px', borderRadius: '16px',
                     border: '1px solid var(--glass-border)',
-                    display: 'flex', flexDirection: 'column', gap: '14px'
+                    display: 'flex', flexDirection: 'column', gap: '10px'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{
-                        width: '38px', height: '38px', borderRadius: '12px',
+                        width: '32px', height: '32px', borderRadius: '10px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: `${habit.color}20`, color: habit.color
                       }}>
-                        {ICONS[habit.icon] || <Activity size={18} />}
+                        {ICONS[habit.icon] || <Activity size={16} />}
                       </div>
-                      <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: 'var(--text-primary)' }}>{habit.name}</h4>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{habit.name}</h4>
                     </div>
 
                     <div
                       title={habit.type === 'numeric' ? 'Numeric Habit' : 'Boolean Habit'}
                       style={{
-                        width: '28px', height: '28px', borderRadius: '8px',
+                        width: '24px', height: '24px', borderRadius: '6px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                         color: habit.type === 'numeric' ? '#60a5fa' : '#10b981'
                       }}
                     >
-                      {habit.type === 'numeric' ? <Hash size={14} /> : <CheckCircle2 size={14} />}
+                      {habit.type === 'numeric' ? <Hash size={12} /> : <CheckCircle2 size={12} />}
                     </div>
                   </div>
 
-                  <div style={{ paddingTop: '10px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>This Month</span>
-                    <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {completedInMonth} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{completedInMonth === 1 ? 'entry' : 'entries'}</span>
-                    </span>
+                  <div style={{ paddingTop: '8px', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 500 }}>This Month</span>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {completedInMonth} <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{completedInMonth === 1 ? 'entry' : 'entries'}</span>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-end', textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Last Logged</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {formatLastMarked(lastMarkedDate)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );
@@ -1251,7 +1411,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* REQUIREMENT 3 & 4: DAY HABITS MODAL (NO EDIT/DELETE, DOUBLE-TAP NUMERIC) */}
       {selectedDayModalDate && createPortal(
@@ -1522,7 +1682,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
                           {habit.name}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ whiteSpace: 'nowrap' }}>{habit.type === 'numeric' ? `Numeric (${habit.unit})` : 'Boolean Check'}</span>
+                          <span style={{ whiteSpace: 'nowrap' }}>{habit.type === 'numeric' ? `Numeric (${habit.unit})` : 'Boolean'}</span>
                           {habit.is_hidden && (
                             <span className="mobile-hide" style={{ background: 'rgba(255, 255, 255, 0.08)', color: '#94a3b8', padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600 }}>
                               Hidden
@@ -1714,36 +1874,7 @@ export default function HabitsModule({ refreshKey, labels: propLabels = [], onUp
         />
       )}
 
-      {/* Quick Floating Button for Today's Habits (Mobile Only) matching Tasks Module */}
-      {!selectedDayModalDate && !isModalOpen && !showLinkageModal && createPortal(
-        <button
-          className="mobile-only"
-          onClick={() => setSelectedDayModalDate(todayStr)}
-          style={{
-            position: 'fixed',
-            bottom: '64px',
-            right: '32px',
-            width: '48px',
-            height: '48px',
-            padding: 0,
-            borderRadius: '12px',
-            background: 'var(--glass-bg)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#f8fafc',
-            boxShadow: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            cursor: 'pointer'
-          }}
-          title="Log Today's Habits"
-        >
-          <Flame size={28} />
-        </button>,
-        document.body
-      )}
+
     </div>
   );
 }

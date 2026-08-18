@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, ChevronDown, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush } from 'lucide-react';
+import { X, Check, Activity, Flame, Heart, Droplets, Dumbbell, BookOpen, Moon, CheckCircle2, Smile, Star, Zap, Coffee, Footprints, Bike, Utensils, Apple, BedDouble, Target, Timer, Link2, Unlink, Tag, ChevronDown, Bath, ShowerHead, Scale, Gauge, Sparkles, Brush, Shirt, Phone } from 'lucide-react';
 
 const API_BASE = 'http://localhost:3001/api';
 
@@ -19,13 +19,16 @@ const ICONS = {
   Moon: <Moon size={20} />,
   BedDouble: <BedDouble size={20} />,
   Sparkles: <Sparkles size={20} />,
+  Brush: <Brush size={20} />,
+  Shirt: <Shirt size={20} />,
   BookOpen: <BookOpen size={20} />,
   Smile: <Smile size={20} />,
   Star: <Star size={20} />,
   Zap: <Zap size={20} />,
   Coffee: <Coffee size={20} />,
   Target: <Target size={20} />,
-  Timer: <Timer size={20} />
+  Timer: <Timer size={20} />,
+  Phone: <Phone size={20} />
 };
 
 const COLORS = [
@@ -192,7 +195,7 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
   const [type, setType] = useState(initialHabit ? initialHabit.type : 'boolean');
   const [unit, setUnit] = useState(initialHabit ? initialHabit.unit : '');
   const [targetValue, setTargetValue] = useState(initialHabit && initialHabit.target_value !== null ? initialHabit.target_value : '');
-  const [targetType, setTargetType] = useState(initialHabit && initialHabit.target_type ? initialHabit.target_type : 'daily_quota');
+  const [targetType, setTargetType] = useState(initialHabit && initialHabit.target_type ? initialHabit.target_type : null);
   const [icon, setIcon] = useState(initialHabit ? initialHabit.icon : 'Activity');
   const [color, setColor] = useState(initialHabit ? initialHabit.color : '#3b82f6');
   const [frequency, setFrequency] = useState(initialHabit ? initialHabit.frequency : 'daily');
@@ -241,7 +244,7 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
       type,
       unit: type === 'numeric' ? unit.trim() : '',
       target_value: type === 'numeric' && targetValue !== '' ? Number(targetValue) : null,
-      target_type: type === 'numeric' ? targetType : null,
+      target_type: type === 'numeric' ? 'daily_quota' : null,
       icon,
       color,
       frequency,
@@ -304,7 +307,7 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="e.g. Drink Water, Skincare, Weight"
+              placeholder="Habit Name"
               className="input-field"
               style={{ width: '100%', padding: '12px 14px', fontSize: '0.95rem' }}
               autoFocus
@@ -329,7 +332,6 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
                 }}
               >
                 <span style={{ fontSize: '0.95rem' }}>Yes / No Toggle</span>
-                <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Checklist routine (Gym, Skincare)</span>
               </button>
 
               <button
@@ -345,7 +347,6 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
                 }}
               >
                 <span style={{ fontSize: '0.95rem' }}>Numeric Tracker</span>
-                <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Log numbers (Weight, Water, Sleep)</span>
               </button>
             </div>
           </div>
@@ -355,19 +356,6 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                    Unit (e.g. mL, kg, hrs)
-                  </label>
-                  <input
-                    type="text"
-                    value={unit}
-                    onChange={e => setUnit(e.target.value)}
-                    placeholder="mL, kg, pages"
-                    className="input-field"
-                    style={{ width: '100%', padding: '10px' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Target Goal
                   </label>
                   <input
@@ -375,44 +363,23 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
                     step="0.5"
                     value={targetValue}
                     onChange={e => setTargetValue(e.target.value)}
-                    placeholder="e.g. 2500, 72, 8"
+                    placeholder=""
                     className="input-field no-spinner"
                     style={{ width: '100%', padding: '10px' }}
                   />
                 </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                  Goal Tracking Behavior
-                </label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setTargetType('daily_quota')}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                      border: `1px solid ${targetType === 'daily_quota' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)'}`,
-                      background: targetType === 'daily_quota' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      color: targetType === 'daily_quota' ? '#60a5fa' : 'var(--text-secondary)',
-                      fontSize: '0.85rem', transition: 'all 0.2s', textAlign: 'center'
-                    }}
-                  >
-                    Daily Quota / Fill Bar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTargetType('milestone')}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '10px', cursor: 'pointer',
-                      border: `1px solid ${targetType === 'milestone' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)'}`,
-                      background: targetType === 'milestone' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-                      color: targetType === 'milestone' ? '#60a5fa' : 'var(--text-secondary)',
-                      fontSize: '0.85rem', transition: 'all 0.2s', textAlign: 'center'
-                    }}
-                  >
-                    Milestone / Trend Line
-                  </button>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={unit}
+                    onChange={e => setUnit(e.target.value)}
+                    placeholder="e.g. kg, mL, hrs"
+                    className="input-field"
+                    style={{ width: '100%', padding: '10px' }}
+                  />
                 </div>
               </div>
             </div>
@@ -422,14 +389,14 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Icon
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(42px, 1fr))', gap: '8px' }}>
               {Object.keys(ICONS).map(key => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setIcon(key)}
                   style={{
-                    width: '42px', height: '42px', borderRadius: '10px', cursor: 'pointer',
+                    width: '100%', height: '42px', borderRadius: '10px', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     border: `1px solid ${icon === key ? color : 'rgba(255,255,255,0.08)'}`,
                     background: icon === key ? `${color}25` : 'rgba(255,255,255,0.03)',
@@ -447,17 +414,16 @@ export default function HabitModal({ onClose, onSave, initialHabit = null, label
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
               Theme Color
             </label>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(32px, 1fr))', gap: '10px' }}>
               {COLORS.map(c => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
                   style={{
-                    width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer',
-                    backgroundColor: c,
-                    border: color === c ? '3px solid white' : '2px solid transparent',
-                    boxShadow: color === c ? `0 0 12px ${c}80` : 'none',
+                    width: '100%', height: '32px', borderRadius: '50%', cursor: 'pointer',
+                    background: c, border: `2px solid ${color === c ? '#fff' : 'transparent'}`,
+                    boxShadow: color === c ? `0 0 0 2px ${c}` : 'none',
                     transition: 'all 0.2s'
                   }}
                 />
